@@ -1,0 +1,10 @@
+# project files
+sys6502
+
+# free pascal files
+*.ppu
+*.o
+*.s
+
+# VIM files
+*.swp
