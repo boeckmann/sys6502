@@ -25,6 +25,7 @@ TCpu6502 = object
   procedure ExecuteToWithDump(pcBreak: word);
 
   function LoadIncPC : byte; inline;
+  function LoadWordIncPC : word; inline;
   procedure PCAddRel(const addr: byte);
 
   procedure AluADC(const m: byte); inline;
@@ -93,12 +94,23 @@ end;
 
 {--- PC and memory access functions -------------------------------------------}
 
-{ load memory from PC abs, PC <- PC + 1 }
+{ load byte from PC abs, PC <- PC + 1 }
 function TCpu6502.LoadIncPC : byte;
 begin
   LoadIncPC := LoadByte(PC);
   inc(PC);
 end;
+
+{ load word from PC abs, PC <- PC + 2 }
+function TCpu6502.LoadWordIncPC : word;
+var
+  tmp: word;
+begin
+  tmp := LoadIncPC;
+  tmp := tmp or (word(LoadIncPC()) shl 8);
+  LoadWordIncPC := tmp;
+end;
+
 
 { add signed byte to PC }
 procedure TCpu6502.PCAddRel(const addr: byte);
@@ -197,12 +209,8 @@ begin
 end;
 
 procedure TCpu6502.OpJMPabs; { opcode $4C - jump absolute }
-var
-  tmpPC: word;
 begin
-  tmpPC := LoadIncPC;
-  tmpPC := tmpPC or (word(LoadIncPC()) shl 8);
-  PC := tmpPC;
+  PC := LoadWordIncPC; 
 end;
 
 procedure TCpu6502.OpBVC;    { opcode $50 - branch if overflow clear }
