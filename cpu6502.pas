@@ -26,7 +26,7 @@ TCpu6502 = object
 
   function LoadByteIncPC : byte; inline;
   function LoadWordIncPC : word; inline;
-  procedure PCAddRel(const addr: byte);
+  procedure PCAddByteSigned(const addr: byte);
 
   procedure AluADC(const m: byte); inline;
   procedure AluSBC(const m: byte); inline;
@@ -113,7 +113,7 @@ end;
 
 
 { add signed byte to PC }
-procedure TCpu6502.PCAddRel(const addr: byte);
+procedure TCpu6502.PCAddByteSigned(const addr: byte);
 var
   tmp: byte;
 begin
@@ -187,7 +187,7 @@ var
   rel: byte;
 begin
   rel := LoadByteIncPC;
-  if not FlagN then PCAddRel(rel);
+  if not FlagN then PCAddByteSigned(rel);
 end;
 
 procedure TCpu6502.OpCLC;    { opcode $18 - clear carry flag }
@@ -200,7 +200,7 @@ var
   rel: byte;
 begin
   rel := LoadByteIncPC;
-  if FlagN then PCAddRel(rel);
+  if FlagN then PCAddByteSigned(rel);
 end;
 
 procedure TCpu6502.OpSEC;    { opcode $38 - set carry flag }
@@ -218,7 +218,7 @@ var
   rel: byte;
 begin
   rel := LoadByteIncPC;
-  if not FlagV then PCAddRel(rel);
+  if not FlagV then PCAddByteSigned(rel);
 end;
 
 procedure TCpu6502.OpCLI;    { opcode $58 - clear interrupt enable flag  }
@@ -239,7 +239,7 @@ var
   rel: byte;
 begin
   rel := LoadByteIncPC;
-  if FlagV then PCAddRel(rel);
+  if FlagV then PCAddByteSigned(rel);
 end;
 
 procedure TCpu6502.OpSEI;    { opcode $78 - set interrupt enable flag  }
@@ -252,7 +252,7 @@ var
   rel: byte;
 begin
   rel := LoadByteIncPC;
-  if not FlagC then PCAddRel(rel);
+  if not FlagC then PCAddByteSigned(rel);
 end;
 
 procedure TCpu6502.OpLDAimm; { opcode $A9 - load accumulator with immediate }
@@ -266,7 +266,7 @@ var
   rel: byte;
 begin
   rel := LoadByteIncPC;
-  if FlagC then PCAddRel(rel);
+  if FlagC then PCAddByteSigned(rel);
 end;
 
 procedure TCpu6502.OpCLV;    { opcode $B8 - clear overflow flag }
@@ -279,7 +279,7 @@ var
   rel: byte;
 begin
   rel := LoadByteIncPC;
-  if not FlagZ then PCAddRel(rel);
+  if not FlagZ then PCAddByteSigned(rel);
 end;
 
 procedure TCpu6502.OpCLD;    { opcode $D8 - clear decimal flag }
@@ -296,7 +296,7 @@ var
   rel: byte;
 begin
   rel := LoadByteIncPC;
-  if FlagZ then PCAddRel(rel);
+  if FlagZ then PCAddByteSigned(rel);
 end;
 
 procedure TCpu6502.OpSED;    { opcode $F8 - set decimal flag }
