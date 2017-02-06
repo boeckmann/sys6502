@@ -24,7 +24,7 @@ TCpu6502 = object
   procedure ExecuteNext;
   procedure ExecuteToWithDump(pcBreak: word);
 
-  function LoadIncPC : byte; inline;
+  function LoadByteIncPC : byte; inline;
   function LoadWordIncPC : word; inline;
   procedure PCAddRel(const addr: byte);
 
@@ -77,7 +77,7 @@ procedure TCpu6502.ExecuteNext;
 var
   opcode: byte;
 begin
-  opcode := LoadIncPC;
+  opcode := LoadByteIncPC;
   OpTbl[opcode]();
 end;
 
@@ -86,7 +86,7 @@ var
   opcode: byte;
 begin
   while PC <> pcBreak do begin
-    opcode := LoadIncPC;
+    opcode := LoadByteIncPC;
     OpTbl[opcode]();
     DumpRegs;
   end;
@@ -95,9 +95,9 @@ end;
 {--- PC and memory access functions -------------------------------------------}
 
 { load byte from PC abs, PC <- PC + 1 }
-function TCpu6502.LoadIncPC : byte;
+function TCpu6502.LoadByteIncPC : byte;
 begin
-  LoadIncPC := LoadByte(PC);
+  LoadByteIncPC := LoadByte(PC);
   inc(PC);
 end;
 
@@ -106,8 +106,8 @@ function TCpu6502.LoadWordIncPC : word;
 var
   tmp: word;
 begin
-  tmp := LoadIncPC;
-  tmp := tmp or (word(LoadIncPC()) shl 8);
+  tmp := LoadByteIncPC;
+  tmp := tmp or (word(LoadByteIncPC()) shl 8);
   LoadWordIncPC := tmp;
 end;
 
@@ -186,7 +186,7 @@ procedure TCpu6502.OpBPL;    { opcode $10 - branch on PLus }
 var
   rel: byte;
 begin
-  rel := LoadIncPC;
+  rel := LoadByteIncPC;
   if not FlagN then PCAddRel(rel);
 end;
 
@@ -199,7 +199,7 @@ procedure TCpu6502.OpBMI;    { opcode $30 - branch on MInus }
 var
   rel: byte;
 begin
-  rel := LoadIncPC;
+  rel := LoadByteIncPC;
   if FlagN then PCAddRel(rel);
 end;
 
@@ -217,7 +217,7 @@ procedure TCpu6502.OpBVC;    { opcode $50 - branch if overflow clear }
 var
   rel: byte;
 begin
-  rel := LoadIncPC;
+  rel := LoadByteIncPC;
   if not FlagV then PCAddRel(rel);
 end;
 
@@ -230,7 +230,7 @@ procedure TCpu6502.OpADCimm; { opcode $69 - add immediate to accumulator with ca
 var
   m: byte;
 begin
-  m := LoadIncPC;
+  m := LoadByteIncPC;
   AluADC(m);
 end;
 
@@ -238,7 +238,7 @@ procedure TCpu6502.OpBVS;    { opcode $70 - branch if overflow set }
 var
   rel: byte;
 begin
-  rel := LoadIncPC;
+  rel := LoadByteIncPC;
   if FlagV then PCAddRel(rel);
 end;
 
@@ -251,13 +251,13 @@ procedure TCpu6502.OpBCC;    { opcode $90 - branch if carry clear }
 var
   rel: byte;
 begin
-  rel := LoadIncPC;
+  rel := LoadByteIncPC;
   if not FlagC then PCAddRel(rel);
 end;
 
 procedure TCpu6502.OpLDAimm; { opcode $A9 - load accumulator with immediate }
 begin
-  A := LoadIncPC;
+  A := LoadByteIncPC;
   AluUpdateNZ(A);
 end;
 
@@ -265,7 +265,7 @@ procedure TCpu6502.OpBCS;    { opcode $B0 - branch if carry set }
 var
   rel: byte;
 begin
-  rel := LoadIncPC;
+  rel := LoadByteIncPC;
   if FlagC then PCAddRel(rel);
 end;
 
@@ -278,7 +278,7 @@ procedure TCpu6502.OpBNE;    { opcode $D0 - branch if not equal }
 var
   rel: byte;
 begin
-  rel := LoadIncPC;
+  rel := LoadByteIncPC;
   if not FlagZ then PCAddRel(rel);
 end;
 
@@ -295,7 +295,7 @@ procedure TCpu6502.OpBEQ;    { opcode $D0 - branch if equal }
 var
   rel: byte;
 begin
-  rel := LoadIncPC;
+  rel := LoadByteIncPC;
   if FlagZ then PCAddRel(rel);
 end;
 
