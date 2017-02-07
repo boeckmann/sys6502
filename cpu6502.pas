@@ -33,8 +33,10 @@ TCpu6502 = object
   procedure AluAND(const m: byte); inline;
   procedure AluORA(const m: byte); inline;
   procedure AluEOR(const m: byte); inline;
+  procedure AluCMP(const m: byte); inline;
   procedure AluUpdateFlags(const op1: byte; const op2: byte; const res: word); inline;
   procedure AluUpdateNZ(const op: byte); inline;
+  procedure AluUpdateNZC(const op: byte); inline;
 
   procedure InitOpTbl;
   procedure OpBPL;    { opcode $10 - branch on PLus }
@@ -159,13 +161,21 @@ begin
   AluUpdateNZ(A);
 end;
 
-procedure TCpu6502.AluEOR(const m: byte); inline;
+procedure TCpu6502.AluEOR(const m: byte);
 begin
   A := A xor m;
   AluUpdateNZ(A);
 end;
 
-procedure TCpu6502.AluUpdateFlags(const op1: byte; const op2: byte; const res: word); inline;
+procedure TCpu6502.AluCMP(const m: byte);
+var
+  tmp: byte;
+begin
+  tmp := A - m;
+  AluUpdateNZC(tmp);
+end;
+
+procedure TCpu6502.AluUpdateFlags(const op1: byte; const op2: byte; const res: word);
 begin
   FlagC := ((res and BIT_8) <> 0);
   FlagZ := ((res and $ff) = 0);
@@ -173,8 +183,15 @@ begin
   FlagV := (((op1 and BIT_7) = (op2 and BIT_7))) and ((op1 and BIT_7) <> (res and BIT_7));
 end;
 
-procedure TCpu6502.AluUpdateNZ(const op: byte); inline;
+procedure TCpu6502.AluUpdateNZ(const op: byte);
 begin
+  FlagZ := ((op and $ff) = 0);
+  FlagN := ((op and BIT_7) <> 0);
+end;
+
+procedure TCpu6502.AluUpdateNZC(const op: byte);
+begin
+  FlagC := ((op and BIT_8) <> 0);
   FlagZ := ((op and $ff) = 0);
   FlagN := ((op and BIT_7) <> 0);
 end;
