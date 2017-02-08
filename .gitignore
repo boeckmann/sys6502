@@ -1,7 +1,7 @@
 # project files
 sys6502
 
-*.prg	# binary files
+*.prg
 
 # free pascal files
 *.ppu
