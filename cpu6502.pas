@@ -73,14 +73,22 @@ TCpu6502 = object
   procedure OpADCimm; //< opcode $69 - add imm to accumulator with carry
   procedure OpBVS;    //< opcode $70 - branch if overflow set
   procedure OpSEI;    //< opcode $78 - set interrupt enable flag
+  procedure OpDEY;    //< opcode $88 - decrement y
+  procedure OpTXA;    //< opcode $8A - transfer X to A
   procedure OpBCC;    //< opcode $90 - branch if carry clear
+  procedure OpTYA;    //< opcode $98 - transfer Y to A
+  procedure OpTAY;    //< opcode $A8 - transfer A to Y
   procedure OpLDAimm; //< opcode $A9 - load accumulator with immediate
+  procedure OpTAX;    //< opcode $AA - transfer A to X
   procedure OpBCS;    //< opcode $B0 - branch if carry set
   procedure OpCLV;    //< opcode $B8 - clear overflow flag
+  procedure OpINY;    //< opcode $C8 - increment Y
   procedure OpCMPimm; //< opcode $C9 - compare accumulator with immediate
+  procedure OpDEX;    //< opcode $CA - decrement X
   procedure OpCMPabs; //< opcode $CD - compare accumulator with abs
   procedure OpBNE;    //< opcode $D0 - branch if not equal
   procedure OpCLD;    //< opcode $D8 - clear decimal flag
+  procedure OpINX;    //< opcode $E8 - increment X
   procedure OpNOP;    //< opcode $EA - no operation
   procedure OpBEQ;    //< opcode $F0 - branch if equal
   procedure OpSED;    //< opcode $F8 - set decimal flag
@@ -268,7 +276,7 @@ end;
 
 procedure TCpu6502.OpJMPabs; { opcode $4C - jump absolute }
 begin
-  PC := LoadWordIncPC; 
+  PC := LoadWordIncPC;
 end;
 
 procedure TCpu6502.OpBVC;    { opcode $50 - branch if overflow clear }
@@ -305,6 +313,18 @@ begin
   FlagI := true;
 end;
 
+procedure TCpu6502.OpDEY;    { opcode $88 }
+begin
+  dec(Y);
+  AluUpdateNZ(Y);
+end;
+
+procedure TCpu6502.OpTXA;    { opcode $8A }
+begin
+  A := X;
+  AluUpdateNZ(A);
+end;
+
 procedure TCpu6502.OpBCC;    { opcode $90 - branch if carry clear }
 var
   rel: byte;
@@ -313,10 +333,28 @@ begin
   if not FlagC then PCAddByteSigned(rel);
 end;
 
+procedure TCpu6502.OpTYA;    { opcode $98 }
+begin
+  A := Y;
+  AluUpdateNZ(A);
+end;
+
+procedure TCpu6502.OpTAY;    { opcode $A8 }
+begin
+  Y := A;
+  AluUpdateNZ(Y);
+end;
+
 procedure TCpu6502.OpLDAimm; { opcode $A9 - load accumulator with immediate }
 begin
   A := LoadByteIncPC;
   AluUpdateNZ(A);
+end;
+
+procedure TCpu6502.OpTAX;    { opcode $AA }
+begin
+  X := A;
+  AluUpdateNZ(X);
 end;
 
 procedure TCpu6502.OpBCS;    { opcode $B0 - branch if carry set }
@@ -332,9 +370,21 @@ begin
   FlagV := false;
 end;
 
+procedure TCpu6502.OpINY;    { opcode $C8 }
+begin
+  inc(Y);
+  AluUpdateNZ(Y);
+end;
+
 procedure TCpu6502.OpCMPimm; { opcode $C9 - compare accumulator with immediate }
 begin
   AluCMP(LoadImm);
+end;
+
+procedure TCpu6502.OpDEX;    { opcode $CA }
+begin
+  dec(X);
+  AluUpdateNZ(X);
 end;
 
 procedure TCpu6502.OpCMPabs; { opcode $CD - compare accumulator with abs }
@@ -353,6 +403,12 @@ end;
 procedure TCpu6502.OpCLD;    { opcode $D8 - clear decimal flag }
 begin
   FlagD := false;
+end;
+
+procedure TCpu6502.OpINX;    { opcode $E8 }
+begin
+  inc(X);
+  AluUpdateNZ(X);
 end;
 
 procedure TCpu6502.OpNOP;    { opcode $EA - no operation }
@@ -391,14 +447,22 @@ begin
   OpTbl[$69] := @OpADCimm;   { add immediate to accumulator with carry }
   OpTbl[$70] := @OpBVS;      { branch if overflow set }
   OpTbl[$78] := @OpSEI;      { set interrupt flag }
+  OpTbl[$88] := @OpDEY;
+  OpTbl[$8A] := @OpTXA;
   OpTbl[$90] := @OpBCC;      { branch if carry clear }
+  OpTbl[$98] := @OpTYA;
+  OpTbl[$A8] := @OpTAY;
   OpTbl[$A9] := @OpLDAimm;   { load accumulator with immediate }
+  OpTBL[$AA] := @OpTAX;
   OpTbl[$B0] := @OpBCS;      { branch if carry set }
   OpTbl[$B8] := @OpCLV;      { clear overflow flag }
+  OpTbl[$C8] := @OpINY;
   OpTbl[$C9] := @OpCMPimm;
+  OpTbl[$CA] := @OpDEX;
   OpTbl[$CD] := @OpCMPabs;
   OpTbl[$D0] := @OpBNE;      { branch if not equal }
   OpTbl[$D8] := @OpCLD;      { clear decimal flag }
+  OpTbl[$DA] := @OpINX;
   OpTbl[$EA] := @OpNOP;      { no operation }
   OpTbl[$F0] := @OpBEQ;      { branch if equal }
   OpTbl[$F8] := @OpSED;	     { set decimal flag }
