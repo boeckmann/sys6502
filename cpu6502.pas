@@ -17,7 +17,7 @@ TCpu6502 = object
   Y: byte;		//< 8-bit register Y
   FlagC: boolean;	//< carry flag
   FlagZ: boolean;	//< zero flag
-  FlagI: boolean;	//< interrupt enable flag
+  FlagI: boolean;	//< interrupt disable flag
   FlagD: boolean;	//< decimal flag
   FlagB: boolean;	//< break flag
   FlagV: boolean;	//< overflow flag
@@ -40,6 +40,8 @@ TCpu6502 = object
   function LoadByteIncPC : byte; inline;
   { fetch next word from PC address and increment PC by 2 }
   function LoadWordIncPC : word; inline;
+  function LoadZPIncPC : byte; inline;
+  procedure StoreZPIncPC(m: byte); inline;
   { add a signed byte to current PC }
   procedure PCAddByteSigned(const addr: byte);
 
@@ -56,6 +58,8 @@ TCpu6502 = object
   procedure AluORA(const m: byte); inline;
   procedure AluEOR(const m: byte); inline;
   procedure AluCMP(const m: byte); inline;
+  function AluASL(const m: byte) : byte; inline;
+
   procedure AluUpdateFlags(const op1: byte; const op2: byte; const res: word); inline;
   procedure AluUpdateNZ(const op: byte); inline;
   procedure AluUpdateNZC(const op: byte); inline;
@@ -63,6 +67,7 @@ TCpu6502 = object
   { opcode execution routines }
   { }
   procedure InitOpTbl;
+  procedure OpASL;    //< opcode $0A - arithmetic shift left accumulator
   procedure OpBPL;    //< opcode $10 - branch on PLus
   procedure OpCLC;    //< opcode $18 - clear carry
   procedure OpBMI;    //< opcode $30 - branch on MInus
@@ -73,6 +78,7 @@ TCpu6502 = object
   procedure OpADCimm; //< opcode $69 - add imm to accumulator with carry
   procedure OpBVS;    //< opcode $70 - branch if overflow set
   procedure OpSEI;    //< opcode $78 - set interrupt enable flag
+  procedure OpSTAzp;  //< opcode $85 - store accumulator at zp
   procedure OpDEY;    //< opcode $88 - decrement y
   procedure OpTXA;    //< opcode $8A - transfer X to A
   procedure OpBCC;    //< opcode $90 - branch if carry clear
@@ -147,6 +153,22 @@ begin
   tmp := LoadByteIncPC;
   tmp := tmp or (word(LoadByteIncPC()) shl 8);
   LoadWordIncPC := tmp;
+end;
+
+function TCpu6502.LoadZPIncPC : byte;
+var
+  addr: word;
+begin
+  addr := LoadByteIncPC;
+  LoadZPIncPC := LoadByte(addr);
+end;
+
+procedure TCpu6502.StoreZPIncPC(m: byte); inline;
+var
+  addr: word;
+begin
+  addr := LoadByteIncPC;
+  StoreByte(addr, m);
 end;
 
 function TCpu6502.LoadImm : byte;
@@ -224,6 +246,13 @@ begin
   AluUpdateNZC(tmp);
 end;
 
+function TCpu6502.AluASL(const m: byte) : byte;
+begin
+  FlagC := (m and $80) <> 0;
+  AluASL := m shl 1;
+  AluUpdateNZ(AluASL);
+end;
+
 procedure TCpu6502.AluUpdateFlags(const op1: byte; const op2: byte; const res: word);
 begin
   FlagC := ((res and BIT_8) <> 0);
@@ -247,6 +276,11 @@ end;
 
 
 {--- opcode implementation ---------------------------------------------------}
+
+procedure TCpu6502.OpASL; { opcode $0A }
+begin
+  A := AluASL(A);
+end;
 
 procedure TCpu6502.OpBPL;    { opcode $10 - branch on PLus }
 var
@@ -311,6 +345,11 @@ end;
 procedure TCpu6502.OpSEI;    { opcode $78 - set interrupt enable flag  }
 begin
   FlagI := true;
+end;
+
+procedure TCpu6502.OpSTAzp;
+begin
+  StoreZPIncPC(A);
 end;
 
 procedure TCpu6502.OpDEY;    { opcode $88 }
@@ -437,6 +476,7 @@ begin
     OpTbl[i] := @OpNOP;
   end;
 
+  OpTbl[$0A] := @OpASL;
   OpTbl[$10] := @OpBPL;      { branch if plus }
   OpTbl[$18] := @OpCLC;      { clear carry flag }
   OpTbl[$30] := @OpBMI;      { branch if minus }
@@ -447,6 +487,7 @@ begin
   OpTbl[$69] := @OpADCimm;   { add immediate to accumulator with carry }
   OpTbl[$70] := @OpBVS;      { branch if overflow set }
   OpTbl[$78] := @OpSEI;      { set interrupt flag }
+  OpTbl[$85] := @OpSTAzp;
   OpTbl[$88] := @OpDEY;
   OpTbl[$8A] := @OpTXA;
   OpTbl[$90] := @OpBCC;      { branch if carry clear }
