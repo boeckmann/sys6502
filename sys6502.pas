@@ -8,7 +8,7 @@ var
   mem: array[0..$3FF] of byte;
 
   flagTest: array[0..14] of byte = ($38, $78, $f8, $18, $58, $d8, $a9, $f9, $69, $01, $d0, $fc, $4c, $fd, $03);
-  zpTest: array[0..6] of byte = ($69, $23, $85, $02, $4c, $fd, $03);
+  zpTest: array[0..8] of byte = ($69, $42, $85, $02, $06, $02, $4c, $fd, $03);
 
 procedure StoreMem(const addr: word; const m: byte);
 begin

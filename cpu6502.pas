@@ -41,7 +41,10 @@ TCpu6502 = object
   { fetch next word from PC address and increment PC by 2 }
   function LoadWordIncPC : word; inline;
   function LoadZPIncPC : byte; inline;
+  function LoadZPIncPC(var addr: word) : byte; inline;
   procedure StoreZPIncPC(m: byte); inline;
+  procedure StoreZP(const addr: word; const m: byte); inline;
+
   { add a signed byte to current PC }
   procedure PCAddByteSigned(const addr: byte);
 
@@ -67,6 +70,7 @@ TCpu6502 = object
   { opcode execution routines }
   { }
   procedure InitOpTbl;
+  procedure OpASLzp;  //< opcode $06 - arithmetic shift left zp
   procedure OpASL;    //< opcode $0A - arithmetic shift left accumulator
   procedure OpBPL;    //< opcode $10 - branch on PLus
   procedure OpCLC;    //< opcode $18 - clear carry
@@ -163,11 +167,22 @@ begin
   LoadZPIncPC := LoadByte(addr);
 end;
 
+function TCpu6502.LoadZPIncPC(var addr: word) : byte;
+begin
+  addr := LoadByteIncPC;
+  LoadZPIncPC := LoadByte(addr);
+end;
+
 procedure TCpu6502.StoreZPIncPC(m: byte); inline;
 var
   addr: word;
 begin
   addr := LoadByteIncPC;
+  StoreZP(addr, m);
+end;
+
+procedure TCpu6502.StoreZP(const addr: word; const m: byte);
+begin
   StoreByte(addr, m);
 end;
 
@@ -276,6 +291,16 @@ end;
 
 
 {--- opcode implementation ---------------------------------------------------}
+
+procedure TCpu6502.OpASLzp; {opcode $06 }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadZPIncPC(addr);
+  tmp := AluASL(tmp);
+  StoreZP(addr, tmp);
+end;
 
 procedure TCpu6502.OpASL; { opcode $0A }
 begin
@@ -476,6 +501,7 @@ begin
     OpTbl[i] := @OpNOP;
   end;
 
+  OpTbl[$06] := @OpASLzp;
   OpTbl[$0A] := @OpASL;
   OpTbl[$10] := @OpBPL;      { branch if plus }
   OpTbl[$18] := @OpCLC;      { clear carry flag }
