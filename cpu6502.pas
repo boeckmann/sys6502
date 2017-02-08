@@ -28,6 +28,10 @@ TCpu6502 = object
   function LoadWordIncPC : word; inline;
   procedure PCAddByteSigned(const addr: byte);
 
+  { addressing functions}
+  function LoadImm : byte; inline;
+  function LoadAbs : byte; inline;
+
   procedure AluADC(const m: byte); inline;
   procedure AluSBC(const m: byte); inline;
   procedure AluAND(const m: byte); inline;
@@ -53,6 +57,8 @@ TCpu6502 = object
   procedure OpLDAimm; { opcode $A9 - load accumulator with immediate }
   procedure OpBCS;    { opcode $B0 - branch if carry set }
   procedure OpCLV;    { opcode $B8 - clear overflow flag }
+  procedure OpCMPimm; { opcode $C9 - compare accumulator with immediate }
+  procedure OpCMPabs; { opcode $CD - compare accumulator with abs }
   procedure OpBNE;    { opcode $D0 - branch if not equal }
   procedure OpCLD;    { opcode $D8 - clear decimal flag }
   procedure OpNOP;    { opcode $EA - no operation }
@@ -113,6 +119,19 @@ begin
   LoadWordIncPC := tmp;
 end;
 
+function TCpu6502.LoadImm : byte;
+begin
+  LoadImm := LoadByte(PC);
+  inc(PC);
+end;
+
+function TCpu6502.LoadAbs : byte;
+var
+  addr: word;
+begin
+  addr := LoadWordIncPC;
+  LoadAbs := LoadByte(addr);
+end;
 
 { add signed byte to PC }
 procedure TCpu6502.PCAddByteSigned(const addr: byte);
@@ -291,6 +310,16 @@ begin
   FlagV := false;
 end;
 
+procedure TCpu6502.OpCMPimm; { opcode $C9 - compare accumulator with immediate }
+begin
+  AluCMP(LoadImm);
+end;
+
+procedure TCpu6502.OpCMPabs; { opcode $CD - compare accumulator with abs }
+begin
+  AluCMP(LoadAbs);
+end;
+
 procedure TCpu6502.OpBNE;    { opcode $D0 - branch if not equal }
 var
   rel: byte;
@@ -344,6 +373,8 @@ begin
   OpTbl[$A9] := @OpLDAimm;   { load accumulator with immediate }
   OpTbl[$B0] := @OpBCS;      { branch if carry set }
   OpTbl[$B8] := @OpCLV;      { clear overflow flag }
+  OpTbl[$C9] := @OpCMPimm;
+  OpTbl[$CD] := @OpCMPabs;
   OpTbl[$D0] := @OpBNE;      { branch if not equal }
   OpTbl[$D8] := @OpCLD;      { clear decimal flag }
   OpTbl[$EA] := @OpNOP;      { no operation }
