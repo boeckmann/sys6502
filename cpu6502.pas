@@ -8,30 +8,48 @@ TLoadFunc = function(const addr: word) : byte;
 TStoreProc = procedure(const addr: word; const m: byte);
 
 TCpu6502 = object
-  PC: word;
+  { cpu registers }
+  { }
+  PC: word;		//< 16-bit program counter PC
 
-  A: byte;
-  X: byte;
-  Y: byte;
+  A: byte;		//< 8-bit accumulator register A
+  X: byte;		//< 8-bit register X
+  Y: byte;		//< 8-bit register Y
+  FlagC: boolean;	//< carry flag
+  FlagZ: boolean;	//< zero flag
+  FlagI: boolean;	//< interrupt enable flag
+  FlagD: boolean;	//< decimal flag
+  FlagB: boolean;	//< break flag
+  FlagV: boolean;	//< overflow flag
+  FlagN: boolean;	//< negative (sign) flag
 
-  FlagC, FlagZ, FlagI, FlagD, FlagB, FlagV, FlagN : boolean;
+  { function pointers to external memory interface }
+  { }
+  LoadByte: TLoadFunc;		//< load byte from external memory
+  StoreByte: TStoreProc;	//< store byte to external memory
 
-  LoadByte: TLoadFunc;
-  StoreByte: TStoreProc;
-
+  { opcode function dispatch table }
   OpTbl: array[0..255] of procedure of object;
 
+  { fetch and execute next instruction }
   procedure ExecuteNext;
+  { fetch and execute next instruction end dexplay cpu status }
   procedure ExecuteToWithDump(pcBreak: word);
 
+  { fetch next byte from PC address and increment PC by 1 }
   function LoadByteIncPC : byte; inline;
+  { fetch next word from PC address and increment PC by 2 }
   function LoadWordIncPC : word; inline;
+  { add a signed byte to current PC }
   procedure PCAddByteSigned(const addr: byte);
 
-  { addressing functions}
+  { addressing functions }
+  { }
   function LoadImm : byte; inline;
   function LoadAbs : byte; inline;
 
+  { ALU routines }
+  { }
   procedure AluADC(const m: byte); inline;
   procedure AluSBC(const m: byte); inline;
   procedure AluAND(const m: byte); inline;
@@ -42,30 +60,34 @@ TCpu6502 = object
   procedure AluUpdateNZ(const op: byte); inline;
   procedure AluUpdateNZC(const op: byte); inline;
 
+  { opcode execution routines }
+  { }
   procedure InitOpTbl;
-  procedure OpBPL;    { opcode $10 - branch on PLus }
-  procedure OpCLC;    { opcode $18 - clear carry }
-  procedure OpBMI;    { opcode $30 - branch on MInus }
-  procedure OpSEC;    { opcode $38 - set carry flag }
-  procedure OpJMPabs; { opcode $4C - jump absolute }
-  procedure OpBVC;    { opcode $50 - branch if overflow clear }
-  procedure OpCLI;    { opcode $58 - clear interrupt enable flag  }
-  procedure OpADCimm; { opcode $69 - add imm to accumulator with carry }
-  procedure OpBVS;    { opcode $70 - branch if overflow set }
-  procedure OpSEI;    { opcode $78 - set interrupt enable flag }
-  procedure OpBCC;    { opcode $90 - branch if carry clear }
-  procedure OpLDAimm; { opcode $A9 - load accumulator with immediate }
-  procedure OpBCS;    { opcode $B0 - branch if carry set }
-  procedure OpCLV;    { opcode $B8 - clear overflow flag }
-  procedure OpCMPimm; { opcode $C9 - compare accumulator with immediate }
-  procedure OpCMPabs; { opcode $CD - compare accumulator with abs }
-  procedure OpBNE;    { opcode $D0 - branch if not equal }
-  procedure OpCLD;    { opcode $D8 - clear decimal flag }
-  procedure OpNOP;    { opcode $EA - no operation }
-  procedure OpBEQ;    { opcode $F0 - branch if equal }
-  procedure OpSED;    { opcode $F8 - set decimal flag }
+  procedure OpBPL;    //< opcode $10 - branch on PLus
+  procedure OpCLC;    //< opcode $18 - clear carry
+  procedure OpBMI;    //< opcode $30 - branch on MInus
+  procedure OpSEC;    //< opcode $38 - set carry flag
+  procedure OpJMPabs; //< opcode $4C - jump absolute
+  procedure OpBVC;    //< opcode $50 - branch if overflow clear
+  procedure OpCLI;    //< opcode $58 - clear interrupt enable flag
+  procedure OpADCimm; //< opcode $69 - add imm to accumulator with carry
+  procedure OpBVS;    //< opcode $70 - branch if overflow set
+  procedure OpSEI;    //< opcode $78 - set interrupt enable flag
+  procedure OpBCC;    //< opcode $90 - branch if carry clear
+  procedure OpLDAimm; //< opcode $A9 - load accumulator with immediate
+  procedure OpBCS;    //< opcode $B0 - branch if carry set
+  procedure OpCLV;    //< opcode $B8 - clear overflow flag
+  procedure OpCMPimm; //< opcode $C9 - compare accumulator with immediate
+  procedure OpCMPabs; //< opcode $CD - compare accumulator with abs
+  procedure OpBNE;    //< opcode $D0 - branch if not equal
+  procedure OpCLD;    //< opcode $D8 - clear decimal flag
+  procedure OpNOP;    //< opcode $EA - no operation
+  procedure OpBEQ;    //< opcode $F0 - branch if equal
+  procedure OpSED;    //< opcode $F8 - set decimal flag
 
-  procedure DumpRegs;
+  { debugging routines }
+  { }
+  procedure DumpRegs;	//< dump all registers
 end;
 
 implementation
