@@ -462,7 +462,7 @@ begin
   OpTbl[$CD] := @OpCMPabs;
   OpTbl[$D0] := @OpBNE;      { branch if not equal }
   OpTbl[$D8] := @OpCLD;      { clear decimal flag }
-  OpTbl[$DA] := @OpINX;
+  OpTbl[$E8] := @OpINX;
   OpTbl[$EA] := @OpNOP;      { no operation }
   OpTbl[$F0] := @OpBEQ;      { branch if equal }
   OpTbl[$F8] := @OpSED;	     { set decimal flag }
