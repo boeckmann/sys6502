@@ -84,8 +84,16 @@ TCpu6502 = object
   procedure OpASL;    //< opcode $0A - arithmetic shift left accumulator
   procedure OpBPL;    //< opcode $10 - branch on PLus
   procedure OpCLC;    //< opcode $18 - clear carry
+  procedure OpANDindX;//< opcode $21 - and A with (ind,X)
+  procedure OpANDzp;  //< opcode $25 - and A with zp
+  procedure OpANDimm; //< opcode $29 - and A with imm
+  procedure OpANDabs; //< opcode $2D - and A with abs
   procedure OpBMI;    //< opcode $30 - branch on MInus
+  procedure OpANDindY;//< opcode $31 - and A with (ind),Y
+  procedure OpANDzpX; //< opcode $35 - and A with zp,X
   procedure OpSEC;    //< opcode $38 - set carry flag
+  procedure OpANDabsY;//< opcode $39 - and A with abs,Y
+  procedure OpANDabsX;//< opcode $3D - and A with abs,X
   procedure OpJMPabs; //< opcode $4C - jump absolute
   procedure OpBVC;    //< opcode $50 - branch if overflow clear
   procedure OpCLI;    //< opcode $58 - clear interrupt enable flag
@@ -428,6 +436,26 @@ begin
   FlagC := false;
 end;
 
+procedure TCpu6502.OpANDindX; { opcode $21 }
+begin
+  AluAND(LoadIndX);
+end;
+
+procedure TCpu6502.OpANDzp; { opcode $25 }
+begin
+  AluAND(LoadZp);
+end;
+
+procedure TCpu6502.OpANDimm; { opcode $29 }
+begin
+  AluAND(LoadImm);
+end;
+
+procedure TCpu6502.OpANDabs; { opcode $2D }
+begin
+  AluAND(LoadAbs);
+end;
+
 procedure TCpu6502.OpBMI;    { opcode $30 - branch on MInus }
 var
   rel: byte;
@@ -436,9 +464,29 @@ begin
   if FlagN then PCAddByteSigned(rel);
 end;
 
+procedure TCpu6502.OpANDindY; { opcode $31 }
+begin
+  AluAND(LoadIndY);
+end;
+
+procedure TCpu6502.OpANDzpX; { opcode $35 }
+begin
+  AluAND(LoadZpX);
+end;
+
 procedure TCpu6502.OpSEC;    { opcode $38 - set carry flag }
 begin
   FlagC := true;
+end;
+
+procedure TCpu6502.OpANDabsY; { opcode $39 }
+begin
+  AluAND(LoadAbsY);
+end;
+
+procedure TCpu6502.OpANDabsX; { opcode $3D }
+begin
+  AluAND(LoadAbsX);
 end;
 
 procedure TCpu6502.OpJMPabs; { opcode $4C - jump absolute }
@@ -669,8 +717,16 @@ begin
   OpTbl[$0A] := @OpASL;
   OpTbl[$10] := @OpBPL;      { branch if plus }
   OpTbl[$18] := @OpCLC;      { clear carry flag }
+  OpTbl[$21] := @OpANDindX;
+  OpTbl[$25] := @OpANDzp;
+  OpTbl[$29] := @OpANDimm;
+  OpTbl[$2D] := @OpANDabs;
   OpTbl[$30] := @OpBMI;      { branch if minus }
-  OpTbl[$38] := @OpSEC;      { set carry flag }
+  OpTbl[$31] := @OpANDindY;
+  OpTbl[$35] := @OpANDzpX;
+  OpTbl[$38] := @OpSEC;
+  OpTbl[$39] := @OpANDabsY;
+  OpTbl[$3D] := @OpANDabsX;
   OpTbl[$4C] := @OpJMPabs;   { jump absolute }
   OpTbl[$50] := @OpBVC;      { branch if overflow clear }
   OpTbl[$58] := @OpCLI;      { clear interrupt flag }
