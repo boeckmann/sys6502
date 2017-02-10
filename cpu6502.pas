@@ -89,13 +89,15 @@ TCpu6502 = object
   procedure OpJMPabs; //< opcode $4C - jump absolute
   procedure OpBVC;    //< opcode $50 - branch if overflow clear
   procedure OpCLI;    //< opcode $58 - clear interrupt enable flag
+  procedure OpADCindX;//< opcode $61 - add (ind,X) to accumulator with carry
   procedure OpADCzp;  //< opcode $65 - add zp to accumulator with carry
   procedure OpADCimm; //< opcode $69 - add imm to accumulator with carry
+  procedure OpADCindY;//< opcode $71 - add (ind),Y to accumulator with carry
   procedure OpADCabs; //< opcode $6D - add abs to accumulator with carry
   procedure OpBVS;    //< opcode $70 - branch if overflow set
-  procedure OpADCzpX; //< opcode $75 - add zp,x to accumulator with carry
-  procedure OpADCabsY;//< opcode $79 - add abs,y to accumulator with carry
-  procedure OpADCabsX;//< opcode $7D - add abs,x to accumulator with carry
+  procedure OpADCzpX; //< opcode $75 - add zp,X to accumulator with carry
+  procedure OpADCabsY;//< opcode $79 - add abs,Y to accumulator with carry
+  procedure OpADCabsX;//< opcode $7D - add abs,X to accumulator with carry
   procedure OpSEI;    //< opcode $78 - set interrupt enable flag
   procedure OpSTAzp;  //< opcode $85 - store accumulator at zp
   procedure OpDEY;    //< opcode $88 - decrement y
@@ -457,6 +459,14 @@ begin
   FlagI := false;
 end;
 
+procedure TCpu6502.OpADCindX; { opcode $61 }
+var
+  m: byte;
+begin
+  m := LoadIndX;
+  AluADC(m);
+end;
+
 procedure TCpu6502.OpADCzp; { opcode $65 }
 var
   m: byte;
@@ -470,6 +480,14 @@ var
   m: byte;
 begin
   m := LoadImm;
+  AluADC(m);
+end;
+
+procedure TCpu6502.OpADCindY; { opcode $71 }
+var
+  m: byte;
+begin
+  m := LoadIndY;
   AluADC(m);
 end;
 
@@ -656,10 +674,12 @@ begin
   OpTbl[$4C] := @OpJMPabs;   { jump absolute }
   OpTbl[$50] := @OpBVC;      { branch if overflow clear }
   OpTbl[$58] := @OpCLI;      { clear interrupt flag }
+  OpTbl[$61] := @OpADCindX;
   OpTbl[$65] := @OpADCzp;
   OpTbl[$69] := @OpADCimm;   { add immediate to accumulator with carry }
   OpTbl[$6D] := @OpADCabs;
   OpTbl[$70] := @OpBVS;      { branch if overflow set }
+  OpTbl[$71] := @OpADCindY;
   OpTbl[$75] := @OpADCzpX;
   OpTbl[$78] := @OpSEI;      { set interrupt flag }
   OpTbl[$78] := @OpADCabsY;
