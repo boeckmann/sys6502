@@ -40,10 +40,6 @@ TCpu6502 = object
   function LoadByteIncPC : byte; inline;
   { fetch next word from PC address and increment PC by 2 }
   function LoadWordIncPC : word; inline;
-  function LoadZPIncPC : byte; inline;
-  function LoadZPIncPC(var addr: word) : byte; inline;
-  procedure StoreZPIncPC(m: byte); inline;
-  procedure StoreZP(const addr: word; const m: byte); inline;
 
   { add a signed byte to current PC }
   procedure PCAddByteSigned(const addr: byte);
@@ -51,7 +47,21 @@ TCpu6502 = object
   { addressing functions }
   { }
   function LoadImm : byte; inline;
+  function LoadZp : byte; inline;
+  function LoadZpWithAddr(var addr: word) : byte; inline;
+  procedure StoreZp(m: byte); inline;
+  procedure StoreZpWithAddr(const addr: word; const m: byte); inline;
+  function LoadZpX : byte; inline;
+  procedure StoreZpX(const m: byte);
   function LoadAbs : byte; inline;
+  function LoadAbsX : byte; inline;
+  procedure StoreAbsX(const m: byte); inline;
+  function LoadAbsY : byte; inline;
+  procedure StoreAbsY(const m: byte); inline;
+  function LoadIndX : byte; inline;
+  procedure StoreIndX(const m: byte); inline;
+  function LoadIndY : byte; inline;
+  procedure StoreIndY(const m: byte); inline;
 
   { ALU routines }
   { }
@@ -79,8 +89,13 @@ TCpu6502 = object
   procedure OpJMPabs; //< opcode $4C - jump absolute
   procedure OpBVC;    //< opcode $50 - branch if overflow clear
   procedure OpCLI;    //< opcode $58 - clear interrupt enable flag
+  procedure OpADCzp;  //< opcode $65 - add zp to accumulator with carry
   procedure OpADCimm; //< opcode $69 - add imm to accumulator with carry
+  procedure OpADCabs; //< opcode $6D - add abs to accumulator with carry
   procedure OpBVS;    //< opcode $70 - branch if overflow set
+  procedure OpADCzpX; //< opcode $75 - add zp,x to accumulator with carry
+  procedure OpADCabsY;//< opcode $79 - add abs,y to accumulator with carry
+  procedure OpADCabsX;//< opcode $7D - add abs,x to accumulator with carry
   procedure OpSEI;    //< opcode $78 - set interrupt enable flag
   procedure OpSTAzp;  //< opcode $85 - store accumulator at zp
   procedure OpDEY;    //< opcode $88 - decrement y
@@ -159,37 +174,55 @@ begin
   LoadWordIncPC := tmp;
 end;
 
-function TCpu6502.LoadZPIncPC : byte;
-var
-  addr: word;
-begin
-  addr := LoadByteIncPC;
-  LoadZPIncPC := LoadByte(addr);
-end;
-
-function TCpu6502.LoadZPIncPC(var addr: word) : byte;
-begin
-  addr := LoadByteIncPC;
-  LoadZPIncPC := LoadByte(addr);
-end;
-
-procedure TCpu6502.StoreZPIncPC(m: byte); inline;
-var
-  addr: word;
-begin
-  addr := LoadByteIncPC;
-  StoreZP(addr, m);
-end;
-
-procedure TCpu6502.StoreZP(const addr: word; const m: byte);
-begin
-  StoreByte(addr, m);
-end;
+{ addressing modes implementation }
 
 function TCpu6502.LoadImm : byte;
 begin
   LoadImm := LoadByte(PC);
   inc(PC);
+end;
+
+function TCpu6502.LoadZp : byte;
+var
+  addr: word;
+begin
+  addr := LoadByteIncPC;
+  LoadZP := LoadByte(addr);
+end;
+
+function TCpu6502.LoadZpWithAddr(var addr: word) : byte;
+begin
+  addr := LoadByteIncPC;
+  LoadZPWithAddr := LoadByte(addr);
+end;
+
+procedure TCpu6502.StoreZp(m: byte); inline;
+var
+  addr: word;
+begin
+  addr := LoadByteIncPC;
+  StoreZPWithAddr(addr, m);
+end;
+
+procedure TCpu6502.StoreZpWithAddr(const addr: word; const m: byte);
+begin
+  StoreByte(addr, m);
+end;
+
+function TCpu6502.LoadZpX : byte;
+var
+  addr: word;
+begin
+  addr := (LoadByteIncPC + X) and $FF;
+  LoadZpX := LoadByte(addr);
+end;
+
+procedure TCpu6502.StoreZpX(const m: byte);
+var
+  addr: word;
+begin
+  addr := (LoadByteIncPC + X) and $FF;
+  StoreByte(addr, m);
 end;
 
 function TCpu6502.LoadAbs : byte;
@@ -199,6 +232,79 @@ begin
   addr := LoadWordIncPC;
   LoadAbs := LoadByte(addr);
 end;
+
+function TCpu6502.LoadAbsX : byte;
+var
+  addr: word;
+begin
+  addr := LoadWordIncPC + X;
+  LoadAbsX := LoadByte(addr);
+end;
+
+procedure TCpu6502.StoreAbsX(const m : byte);
+var
+  addr: word;
+begin
+  addr := LoadWordIncPC + X;
+  StoreByte(addr, m);
+end;
+
+function TCpu6502.LoadAbsY : byte;
+var
+  addr: word;
+begin
+  addr := LoadWordIncPC + Y;
+  LoadAbsY := LoadByte(addr);
+end;
+
+procedure TCpu6502.StoreAbsY(const m : byte);
+var
+  addr: word;
+begin
+  addr := LoadWordIncPC + Y;
+  StoreByte(addr, m);
+end;
+
+function TCpu6502.LoadIndX : byte;
+var
+  zp: byte;
+  addr: word;
+begin
+  zp := (LoadByteIncPC + X) and $ff;
+  addr := LoadByte(zp) or LoadByte((zp + 1) and $ff) shl 8;
+  LoadIndX := LoadByte(addr);
+end;
+
+procedure TCpu6502.StoreIndX(const m: byte);
+var
+  zp: byte;
+  addr: word;
+begin
+  zp := (LoadByteIncPC + X) and $ff;
+  addr := LoadByte(zp) or LoadByte((zp + 1) and $ff) shl 8;
+  StoreByte(addr, m);
+end;
+
+function TCpu6502.LoadIndY : byte;
+var
+  zp: byte;
+  addr: word;
+begin
+  zp := LoadByteIncPC;
+  addr := LoadByte(zp) or LoadByte((zp + 1) and $ff) shl 8;
+  LoadIndY := LoadByte(addr + Y);
+end;
+
+procedure TCpu6502.StoreIndY(const m: byte);
+var
+  zp: byte;
+  addr: word;
+begin
+  zp := LoadByteIncPC;
+  addr := LoadByte(zp) or LoadByte((zp + 1) and $ff) shl 8;
+  StoreByte(addr + Y, m);
+end;
+
 
 { add signed byte to PC }
 procedure TCpu6502.PCAddByteSigned(const addr: byte);
@@ -297,9 +403,9 @@ var
   addr: word;
   tmp: byte;
 begin
-  tmp := LoadZPIncPC(addr);
+  tmp := LoadZPWithAddr(addr);
   tmp := AluASL(tmp);
-  StoreZP(addr, tmp);
+  StoreZPWithAddr(addr, tmp);
 end;
 
 procedure TCpu6502.OpASL; { opcode $0A }
@@ -351,11 +457,27 @@ begin
   FlagI := false;
 end;
 
+procedure TCpu6502.OpADCzp; { opcode $65 }
+var
+  m: byte;
+begin
+  m := LoadZP;
+  AluADC(m);
+end;
+
 procedure TCpu6502.OpADCimm; { opcode $69 - add immediate to accumulator with carry }
 var
   m: byte;
 begin
-  m := LoadByteIncPC;
+  m := LoadImm;
+  AluADC(m);
+end;
+
+procedure TCpu6502.OpADCabs; { opcode $6D }
+var
+  m: byte;
+begin
+  m := LoadAbs;
   AluADC(m);
 end;
 
@@ -367,14 +489,38 @@ begin
   if FlagV then PCAddByteSigned(rel);
 end;
 
+procedure TCpu6502.OpADCzpX; { opcode $75 }
+var
+  m: byte;
+begin
+  m := LoadZpX;
+  AluADC(m);
+end;
+
 procedure TCpu6502.OpSEI;    { opcode $78 - set interrupt enable flag  }
 begin
   FlagI := true;
 end;
 
-procedure TCpu6502.OpSTAzp;
+procedure TCpu6502.OpADCabsY; { opcode $79 }
+var
+  m: byte;
 begin
-  StoreZPIncPC(A);
+  m := LoadAbsY;
+  AluADC(m);
+end;
+
+procedure TCpu6502.OpADCabsX; { opcode $7D }
+var
+  m: byte;
+begin
+  m := LoadAbsX;
+  AluADC(m);
+end;
+
+procedure TCpu6502.OpSTAzp; { opcode $85 }
+begin
+  StoreZP(A);
 end;
 
 procedure TCpu6502.OpDEY;    { opcode $88 }
@@ -510,9 +656,14 @@ begin
   OpTbl[$4C] := @OpJMPabs;   { jump absolute }
   OpTbl[$50] := @OpBVC;      { branch if overflow clear }
   OpTbl[$58] := @OpCLI;      { clear interrupt flag }
+  OpTbl[$65] := @OpADCzp;
   OpTbl[$69] := @OpADCimm;   { add immediate to accumulator with carry }
+  OpTbl[$6D] := @OpADCabs;
   OpTbl[$70] := @OpBVS;      { branch if overflow set }
+  OpTbl[$75] := @OpADCzpX;
   OpTbl[$78] := @OpSEI;      { set interrupt flag }
+  OpTbl[$78] := @OpADCabsY;
+  OpTbl[$7D] := @OpADCabsX;
   OpTbl[$85] := @OpSTAzp;
   OpTbl[$88] := @OpDEY;
   OpTbl[$8A] := @OpTXA;
