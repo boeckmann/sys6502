@@ -3,7 +3,7 @@ program sys6502;
 {$MODE objfpc}{$H+}
 
 uses
-  sysutils, cpu6502, math;
+  SysUtils, math, cpu6502;
 
 const
   MAX_MEM = $ffff;
@@ -24,25 +24,6 @@ end;
 function LoadMem(const addr: word) : byte;
 begin
   LoadMem := mem[addr];
-end;
-
-procedure DumpMem(const addr: word);
-var
-  i: integer;
-begin
-  Write(format('%4.4x  ', [addr]));
-  for i := addr to addr + 15 do begin
-    Write(format('%2.2x ', [mem[addr]]));
-  end;
-  WriteLn;
-end;
-
-procedure LoadPrgAt(const addr: word; var prg: array of byte; const len: integer);
-var
-  i: integer;
-begin
-  WriteLn(format('loading %d bytes at %4.4x', [len, addr]));
-  for i := 0 to len - 1 do mem[addr+i] := prg[i];
 end;
 
 function ParseNumber(const s: string; var n: integer) : boolean;
