@@ -3,3 +3,5 @@
 	lda	#1
 	clc
 	adc	#$ff
+	jmp	$fffc
+

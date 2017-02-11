@@ -1,5 +1,10 @@
 unit cpu6502;
 
+{$MODE objfpc}{$H+}
+
+{$OVERFLOWCHECKS off}   // some code depends on value wrap around
+{$RANGECHECKS off}      // also disable rangechecks for speed
+
 interface
 
 type
@@ -31,14 +36,19 @@ TCpu6502 = object
   { opcode function dispatch table }
   OpTbl: array[0..255] of procedure of object;
 
+  constructor Init(const load: TLoadFunc; const store: TStoreProc);
+  procedure ResetCPU;
+
   { fetch and execute next instruction }
   procedure ExecuteNext;
   { fetch and execute next instruction end dexplay cpu status }
+  procedure ExecuteTo(pcBreak: word);
   procedure ExecuteToWithDump(pcBreak: word);
 
   { fetch next byte from PC address and increment PC by 1 }
   function LoadByteIncPC : byte; inline;
   { fetch next word from PC address and increment PC by 2 }
+  function LoadWord(const addr: word) : word; inline;
   function LoadWordIncPC : word; inline;
 
   { add a signed byte to current PC }
@@ -48,7 +58,7 @@ TCpu6502 = object
   { }
   function LoadImm : byte; inline;
   function LoadZp : byte; inline;
-  function LoadZpWithAddr(var addr: word) : byte; inline;
+  function LoadZpWithAddr(out addr: word) : byte; inline;
   procedure StoreZp(m: byte); inline;
   procedure StoreZpWithAddr(const addr: word; const m: byte); inline;
   function LoadZpX : byte; inline;
@@ -144,6 +154,19 @@ const
   BIT_8 = $100;
 
 
+constructor TCpu6502.Init(const load: TLoadFunc; const store: TStoreProc);
+begin
+  LoadByte := load;
+  StoreByte := store;
+
+  InitOpTbl;  
+end;
+
+procedure TCpu6502.ResetCPU;
+begin
+  PC := LoadWord($FFFC);
+end;
+
 {--- high level execution routines  ------------------------------------------}
 
 procedure TCpu6502.ExecuteNext;
@@ -152,6 +175,16 @@ var
 begin
   opcode := LoadByteIncPC;
   OpTbl[opcode]();
+end;
+
+procedure TCpu6502.ExecuteTo(pcBreak: word);
+var
+  opcode: byte;
+begin
+  while PC <> pcBreak do begin
+    opcode := LoadByteIncPC;
+    OpTbl[opcode]();
+  end;
 end;
 
 procedure TCpu6502.ExecuteToWithDump(pcBreak: word);
@@ -174,13 +207,21 @@ begin
   inc(PC);
 end;
 
+function TCpu6502.LoadWord(const addr : word) : word;
+var l, h: word;
+begin
+  l := LoadByte(addr);
+  h := LoadByte(addr+1) shl 8;
+  LoadWord := l or h;
+end;
+
 { load word from PC abs, PC <- PC + 2 }
 function TCpu6502.LoadWordIncPC : word;
 var
   tmp: word;
 begin
-  tmp := LoadByteIncPC;
-  tmp := tmp or (word(LoadByteIncPC()) shl 8);
+  tmp := LoadWord(PC);
+  PC := PC + 2;
   LoadWordIncPC := tmp;
 end;
 
@@ -200,7 +241,7 @@ begin
   LoadZP := LoadByte(addr);
 end;
 
-function TCpu6502.LoadZpWithAddr(var addr: word) : byte;
+function TCpu6502.LoadZpWithAddr(out addr: word) : byte;
 begin
   addr := LoadByteIncPC;
   LoadZPWithAddr := LoadByte(addr);
@@ -764,7 +805,7 @@ end;
 
 procedure TCpu6502.DumpRegs;
 begin
-  Write(Format('PC=%4.4x[%2.2x %2.2x %2.2x]  A=%2.2x X=%2.2x Y=%2.2x  ', [PC, LoadByte(PC), LoadByte(PC+1), LoadByte(PC+2), A, X, Y]));
+  Write(Format('PC=%4.4x  A=%2.2x X=%2.2x Y=%2.2x  ', [PC, A, X, Y]));
   if FlagN then Write('N') else Write('.');
   if FlagV then Write('V') else Write('.');
   if FlagB then Write('B') else Write('.');
