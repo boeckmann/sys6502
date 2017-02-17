@@ -997,7 +997,7 @@ begin
   OpTbl[$71] := @OpADCindY;
   OpTbl[$75] := @OpADCzpX;
   OpTbl[$78] := @OpSEI;      { set interrupt flag }
-  OpTbl[$78] := @OpADCabsY;
+  OpTbl[$79] := @OpADCabsY;
   OpTbl[$7D] := @OpADCabsX;
   OpTbl[$81] := @OpSTAindX;
   OpTbl[$84] := @OpSTYzp;
