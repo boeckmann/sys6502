@@ -124,16 +124,21 @@ TCpu6502 = object
   procedure OpTXA;    //< opcode $8A - transfer X to A
   procedure OpBCC;    //< opcode $90 - branch if carry clear
   procedure OpTYA;    //< opcode $98 - transfer Y to A
+  procedure OpLDYimm; //< opcode $A0 - load Y with imm
   procedure OpLDXimm; //< opcode $A2 - load X with imm
+  procedure OpLDYzp;  //< opcode $A4 - load Y with zp
   procedure OpLDXzp;  //< opcode $A6 - load X with zp
   procedure OpTAY;    //< opcode $A8 - transfer A to Y
   procedure OpLDAimm; //< opcode $A9 - load accumulator with immediate
   procedure OpTAX;    //< opcode $AA - transfer A to X
-  procedure OpLDXabs; //< opcode $AE - load X with zp,X
+  procedure OpLDYabs; //< opcode $AC - load Y with abs
+  procedure OpLDXabs; //< opcode $AE - load X with abs
   procedure OpBCS;    //< opcode $B0 - branch if carry set
-  procedure OpLDXzpY; //< opcode $B6 - load X with zp,X
+  procedure OpLDYzpX; //< opcode $B4 - load Y with zp,X
+  procedure OpLDXzpY; //< opcode $B6 - load X with zp,Y
   procedure OpCLV;    //< opcode $B8 - clear overflow flag
-  procedure OpLDXabsY;//< opcode $BE - load X with zp,X
+  procedure OpLDYabsX;//< opcode $BC - load Y with abs,X
+  procedure OpLDXabsY;//< opcode $BE - load X with abs,Y
   procedure OpINY;    //< opcode $C8 - increment Y
   procedure OpCMPimm; //< opcode $C9 - compare accumulator with immediate
   procedure OpDEX;    //< opcode $CA - decrement X
@@ -679,10 +684,22 @@ begin
   AluUpdateNZ(A);
 end;
 
+procedure TCpu6502.OpLDYimm; { opcode $A0 }
+begin
+  Y := LoadByteIncPC;
+  AluUpdateNZ(Y);
+end;
+
 procedure TCpu6502.OpLDXimm; { opcode $A2 }
 begin
   X := LoadByteIncPC;
   AluUpdateNZ(X);
+end;
+
+procedure TCpu6502.OpLDYzp; { opcode $A4 }
+begin
+  Y := LoadZp;
+  AluUpdateNZ(Y);
 end;
 
 procedure TCpu6502.OpLDXzp; { opcode $A6 }
@@ -709,6 +726,12 @@ begin
   AluUpdateNZ(X);
 end;
 
+procedure TCpu6502.OpLDYabs; { opcode $AC }
+begin
+  Y := LoadAbs;
+  AluUpdateNZ(Y);
+end;
+
 procedure TCpu6502.OpLDXabs; { opcode $AE }
 begin
   X := LoadAbs;
@@ -723,6 +746,12 @@ begin
   if FlagC then PCAddByteSigned(rel);
 end;
 
+procedure TCpu6502.OpLDYzpX; { opcode $B4 }
+begin
+  Y := LoadZpX;
+  AluUpdateNZ(Y);
+end;
+
 procedure TCpu6502.OpLDXzpY; { opcode $B6 }
 begin
   X := LoadZpY;
@@ -732,6 +761,12 @@ end;
 procedure TCpu6502.OpCLV;    { opcode $B8 - clear overflow flag }
 begin
   FlagV := false;
+end;
+
+procedure TCpu6502.OpLDYabsX; { opcode $BC }
+begin
+  Y := LoadAbsX;
+  AluUpdateNZ(Y);
 end;
 
 procedure TCpu6502.OpLDXabsY; { opcode $BE }
@@ -839,15 +874,20 @@ begin
   OpTbl[$8A] := @OpTXA;
   OpTbl[$90] := @OpBCC;      { branch if carry clear }
   OpTbl[$98] := @OpTYA;
+  OpTbl[$A0] := @OpLDYimm;
   OpTbl[$A2] := @OpLDXimm;
+  OpTbl[$A4] := @OpLDYzp;
   OpTbl[$A6] := @OpLDXzp;
   OpTbl[$A8] := @OpTAY;
   OpTbl[$A9] := @OpLDAimm;   { load accumulator with immediate }
   OpTBL[$AA] := @OpTAX;
+  OpTbl[$AC] := @OpLDYabs;
   OpTbl[$AE] := @OpLDXabs;
   OpTbl[$B0] := @OpBCS;      { branch if carry set }
+  OpTbl[$B4] := @OpLDYzpX;
   OpTbl[$B6] := @OpLDXzpY;
   OpTbl[$B8] := @OpCLV;      { clear overflow flag }
+  OpTbl[$BC] := @OpLDYabsX;
   OpTbl[$BE] := @OpLDXabsY;
   OpTbl[$C8] := @OpINY;
   OpTbl[$C9] := @OpCMPimm;
