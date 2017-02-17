@@ -66,6 +66,7 @@ TCpu6502 = object
   function LoadZpY : byte; inline;
   procedure StoreZpY(const m: byte);
   function LoadAbs : byte; inline;
+  procedure StoreAbs(const m: byte); inline;
   function LoadAbsX : byte; inline;
   procedure StoreAbsX(const m: byte); inline;
   function LoadAbsY : byte; inline;
@@ -120,9 +121,12 @@ TCpu6502 = object
   procedure OpADCabsX;//< opcode $7D - add abs,X to accumulator with carry
   procedure OpSEI;    //< opcode $78 - set interrupt enable flag
   procedure OpSTAzp;  //< opcode $85 - store accumulator at zp
+  procedure OpSTXzp;  //< opcode $86 - store X at zp
   procedure OpDEY;    //< opcode $88 - decrement y
   procedure OpTXA;    //< opcode $8A - transfer X to A
+  procedure OpSTXabs; //< opcode $8E - store X at abs
   procedure OpBCC;    //< opcode $90 - branch if carry clear
+  procedure OpSTXzpY; //< opcode $96 - store X at zp,Y
   procedure OpTYA;    //< opcode $98 - transfer Y to A
   procedure OpLDYimm; //< opcode $A0 - load Y with imm
   procedure OpLDXimm; //< opcode $A2 - load X with imm
@@ -310,6 +314,14 @@ var
 begin
   addr := LoadWordIncPC;
   LoadAbs := LoadByte(addr);
+end;
+
+procedure TCpu6502.StoreAbs(const m : byte);
+var
+  addr: word;
+begin
+  addr := LoadWordIncPC;
+  StoreByte(addr, m);
 end;
 
 function TCpu6502.LoadAbsX : byte;
@@ -658,6 +670,11 @@ begin
   StoreZP(A);
 end;
 
+procedure TCpu6502.OpSTXzp; { opcode $86 }
+begin
+  StoreZP(X);
+end;
+
 procedure TCpu6502.OpDEY;    { opcode $88 }
 begin
   dec(Y);
@@ -670,12 +687,22 @@ begin
   AluUpdateNZ(A);
 end;
 
+procedure TCpu6502.OpSTXabs; { opcode $8E }
+begin
+  StoreAbs(X);
+end;
+
 procedure TCpu6502.OpBCC;    { opcode $90 - branch if carry clear }
 var
   rel: byte;
 begin
   rel := LoadByteIncPC;
   if not FlagC then PCAddByteSigned(rel);
+end;
+
+procedure TCpu6502.OpSTXzpY; { opcode $96 }
+begin
+  StoreZpY(X);
 end;
 
 procedure TCpu6502.OpTYA;    { opcode $98 }
@@ -870,9 +897,12 @@ begin
   OpTbl[$78] := @OpADCabsY;
   OpTbl[$7D] := @OpADCabsX;
   OpTbl[$85] := @OpSTAzp;
+  OpTbl[$86] := @OpSTXzp;
   OpTbl[$88] := @OpDEY;
   OpTbl[$8A] := @OpTXA;
+  OpTbl[$8E] := @OpSTXabs;
   OpTbl[$90] := @OpBCC;      { branch if carry clear }
+  OpTbl[$96] := @OpSTXzpY;
   OpTbl[$98] := @OpTYA;
   OpTbl[$A0] := @OpLDYimm;
   OpTbl[$A2] := @OpLDXimm;
