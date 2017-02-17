@@ -120,17 +120,23 @@ TCpu6502 = object
   procedure OpADCabsY;//< opcode $79 - add abs,Y to accumulator with carry
   procedure OpADCabsX;//< opcode $7D - add abs,X to accumulator with carry
   procedure OpSEI;    //< opcode $78 - set interrupt enable flag
+  procedure OpSTAindX;//< opcode $81 - store A at (ind,X)
   procedure OpSTYzp;  //< opcode $84 - store Y at zp
   procedure OpSTAzp;  //< opcode $85 - store accumulator at zp
   procedure OpSTXzp;  //< opcode $86 - store X at zp
   procedure OpDEY;    //< opcode $88 - decrement y
   procedure OpTXA;    //< opcode $8A - transfer X to A
   procedure OpSTYabs; //< opcode $8C - store Y at abs
+  procedure OpSTAabs; //< opcode $8D - store A at abs
   procedure OpSTXabs; //< opcode $8E - store X at abs
   procedure OpBCC;    //< opcode $90 - branch if carry clear
+  procedure OpSTAindY;//< opcode $91 - store A at (ind),Y
   procedure OpSTYzpX; //< opcode $94 - store Y at zp,X
+  procedure OpSTAzpX; //< opcode $95 - store A at zp,X
   procedure OpSTXzpY; //< opcode $96 - store X at zp,Y
   procedure OpTYA;    //< opcode $98 - transfer Y to A
+  procedure OpSTAabsY;//< opcode $99 - store A at abs,Y
+  procedure OpSTAabsX;//< opcode $9D - store A at abs,X
   procedure OpLDYimm; //< opcode $A0 - load Y with imm
   procedure OpLDAindX;//< opcode $A1 - load A with (ind,X)
   procedure OpLDXimm; //< opcode $A2 - load X with imm
@@ -675,6 +681,11 @@ begin
   AluADC(m);
 end;
 
+procedure TCpu6502.OpSTAindX; { opcode $81 }
+begin
+  StoreIndX(A);
+end;
+
 procedure TCpu6502.OpSTYzp; { opcode $84 }
 begin
   StoreZP(Y);
@@ -707,6 +718,11 @@ begin
   StoreAbs(Y);
 end;
 
+procedure TCpu6502.OpSTAabs; { opcode $8D }
+begin
+  StoreAbs(A);
+end;
+
 procedure TCpu6502.OpSTXabs; { opcode $8E }
 begin
   StoreAbs(X);
@@ -720,9 +736,19 @@ begin
   if not FlagC then PCAddByteSigned(rel);
 end;
 
+procedure TCpu6502.OpSTAindY; { opcode $91 }
+begin
+  StoreIndY(A);
+end;
+
 procedure TCpu6502.OpSTYzpX; { opcode $94 }
 begin
   StoreZpX(Y);
+end;
+
+procedure TCpu6502.OpSTAzpX; { opcode $95 }
+begin
+  StoreZpX(A);
 end;
 
 procedure TCpu6502.OpSTXzpY; { opcode $96 }
@@ -734,6 +760,16 @@ procedure TCpu6502.OpTYA;    { opcode $98 }
 begin
   A := Y;
   AluUpdateNZ(A);
+end;
+
+procedure TCpu6502.OpSTAabsY; { opcode $99 }
+begin
+  StoreAbsY(A);
+end;
+
+procedure TCpu6502.OpSTAabsX; { opcode $9D }
+begin
+  StoreAbsX(A);
 end;
 
 procedure TCpu6502.OpLDYimm; { opcode $A0 }
@@ -963,17 +999,23 @@ begin
   OpTbl[$78] := @OpSEI;      { set interrupt flag }
   OpTbl[$78] := @OpADCabsY;
   OpTbl[$7D] := @OpADCabsX;
+  OpTbl[$81] := @OpSTAindX;
   OpTbl[$84] := @OpSTYzp;
   OpTbl[$85] := @OpSTAzp;
   OpTbl[$86] := @OpSTXzp;
   OpTbl[$88] := @OpDEY;
   OpTbl[$8A] := @OpTXA;
   OpTbl[$8C] := @OpSTYabs;
+  OpTbl[$8D] := @OpSTAabs;
   OpTbl[$8E] := @OpSTXabs;
   OpTbl[$90] := @OpBCC;      { branch if carry clear }
+  OpTbl[$91] := @OpSTAindY;
   OpTbl[$94] := @OpSTYzpX;
+  OpTbl[$95] := @OpSTAzpX;
   OpTbl[$96] := @OpSTXzpY;
   OpTbl[$98] := @OpTYA;
+  OpTbl[$99] := @OpSTAabsY;
+  OpTbl[$9D] := @OpSTAabsX;
   OpTbl[$A0] := @OpLDYimm;
   OpTbl[$A1] := @OpLDAindX;
   OpTbl[$A2] := @OpLDXimm;
