@@ -60,14 +60,16 @@ TCpu6502 = object
   function LoadZp : byte; inline;
   function LoadZpWithAddr(out addr: word) : byte; inline;
   procedure StoreZp(m: byte); inline;
-  procedure StoreZpWithAddr(const addr: word; const m: byte); inline;
   function LoadZpX : byte; inline;
+  function LoadZpXWithAddr(out addr: word) : byte; inline;
   procedure StoreZpX(const m: byte);
   function LoadZpY : byte; inline;
   procedure StoreZpY(const m: byte);
   function LoadAbs : byte; inline;
+  function LoadAbsWithAddr(out addr: word) : byte; inline;
   procedure StoreAbs(const m: byte); inline;
   function LoadAbsX : byte; inline;
+  function LoadAbsXWithAddr(out addr: word) : byte; inline;
   procedure StoreAbsX(const m: byte); inline;
   function LoadAbsY : byte; inline;
   procedure StoreAbsY(const m: byte); inline;
@@ -95,8 +97,11 @@ TCpu6502 = object
   procedure InitOpTbl;
   procedure OpASLzp;  //< opcode $06 - arithmetic shift left zp
   procedure OpASL;    //< opcode $0A - arithmetic shift left accumulator
+  procedure OpASLabs; //< opcode $0E - arithmetic shift left abs
   procedure OpBPL;    //< opcode $10 - branch on PLus
+  procedure OpASLzpX; //< opcode $16 - arithmetic shift left zp,X
   procedure OpCLC;    //< opcode $18 - clear carry
+  procedure OpASLabsX;//< opcode $1E - arithmetic shift left abs,X
   procedure OpANDindX;//< opcode $21 - and A with (ind,X)
   procedure OpANDzp;  //< opcode $25 - and A with zp
   procedure OpANDimm; //< opcode $29 - and A with imm
@@ -284,11 +289,6 @@ var
   addr: word;
 begin
   addr := LoadByteIncPC;
-  StoreZPWithAddr(addr, m);
-end;
-
-procedure TCpu6502.StoreZpWithAddr(const addr: word; const m: byte);
-begin
   StoreByte(addr, m);
 end;
 
@@ -298,6 +298,12 @@ var
 begin
   addr := (LoadByteIncPC + X) and $FF;
   LoadZpX := LoadByte(addr);
+end;
+
+function TCpu6502.LoadZpXWithAddr(out addr: word) : byte;
+begin
+  addr := (LoadByteIncPC + X) and $FF;
+  LoadZpXWithAddr := LoadByte(addr);
 end;
 
 procedure TCpu6502.StoreZpX(const m: byte);
@@ -332,6 +338,12 @@ begin
   LoadAbs := LoadByte(addr);
 end;
 
+function TCpu6502.LoadAbsWithAddr(out addr: word) : byte;
+begin
+  addr := LoadWordIncPC;
+  LoadAbsWithAddr := LoadByte(addr);
+end;
+
 procedure TCpu6502.StoreAbs(const m : byte);
 var
   addr: word;
@@ -346,6 +358,12 @@ var
 begin
   addr := LoadWordIncPC + X;
   LoadAbsX := LoadByte(addr);
+end;
+
+function TCpu6502.LoadAbsXWithAddr(out addr: word) : byte;
+begin
+  addr := LoadWordIncPC + X;
+  LoadAbsXWithAddr := LoadByte(addr);
 end;
 
 procedure TCpu6502.StoreAbsX(const m : byte);
@@ -510,14 +528,34 @@ var
   addr: word;
   tmp: byte;
 begin
-  tmp := LoadZPWithAddr(addr);
+  tmp := LoadZpWithAddr(addr);
   tmp := AluASL(tmp);
-  StoreZPWithAddr(addr, tmp);
+  StoreByte(addr, tmp);
 end;
 
 procedure TCpu6502.OpASL; { opcode $0A }
 begin
   A := AluASL(A);
+end;
+
+procedure TCpu6502.OpASLabs; {opcode $0E }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadAbsWithAddr(addr);
+  tmp := AluASL(tmp);
+  StoreByte(addr, tmp);
+end;
+
+procedure TCpu6502.OpASLzpX; {opcode $16 }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadZpXWithAddr(addr);
+  tmp := AluASL(tmp);
+  StoreByte(addr, tmp);
 end;
 
 procedure TCpu6502.OpBPL;    { opcode $10 - branch on PLus }
@@ -531,6 +569,16 @@ end;
 procedure TCpu6502.OpCLC;    { opcode $18 - clear carry flag }
 begin
   FlagC := false;
+end;
+
+procedure TCpu6502.OpASLabsX; {opcode $1E }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadAbsXWithAddr(addr);
+  tmp := AluASL(tmp);
+  StoreByte(addr, tmp);
 end;
 
 procedure TCpu6502.OpANDindX; { opcode $21 }
@@ -974,8 +1022,11 @@ begin
 
   OpTbl[$06] := @OpASLzp;
   OpTbl[$0A] := @OpASL;
+  OpTbl[$0E] := @OpASLabs;
   OpTbl[$10] := @OpBPL;      { branch if plus }
+  OpTbl[$16] := @OpASLzpX;
   OpTbl[$18] := @OpCLC;      { clear carry flag }
+  OpTbl[$1E] := @OpASLabsX;
   OpTbl[$21] := @OpANDindX;
   OpTbl[$25] := @OpANDzp;
   OpTbl[$29] := @OpANDimm;
