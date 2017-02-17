@@ -86,6 +86,8 @@ TCpu6502 = object
   procedure AluORA(const m: byte); inline;
   procedure AluEOR(const m: byte); inline;
   procedure AluCMP(const m: byte); inline;
+  procedure AluCPX(const m: byte); inline;
+  procedure AluCPY(const m: byte); inline;
   function AluASL(const m: byte) : byte; inline;
 
   procedure AluUpdateFlags(const op1: byte; const op2: byte; const res: word); inline;
@@ -164,11 +166,14 @@ TCpu6502 = object
   procedure OpLDYabsX;//< opcode $BC - load Y with abs,X
   procedure OpLDAabsX;//< opcode $BD - load A with abs,X
   procedure OpLDXabsY;//< opcode $BE - load X with abs,Y
+  procedure OpCPYimm; //< opcode $C0 - compare Y with imm
   procedure OpCMPindX;//< opcode $C1 - compare A with (ind,X)
+  procedure OpCPYzp;  //< opcode $C4 - compare Y with zp
   procedure OpCMPzp;  //< opcode $C5 - compare A with zp
   procedure OpINY;    //< opcode $C8 - increment Y
   procedure OpCMPimm; //< opcode $C9 - compare accumulator with immediate
   procedure OpDEX;    //< opcode $CA - decrement X
+  procedure OpCPYabs; //< opcode $CC - compare Y with abs
   procedure OpCMPabs; //< opcode $CD - compare A with abs
   procedure OpBNE;    //< opcode $D0 - branch if not equal
   procedure OpCMPindY;//< opcode $D1 - compare A with (ind),Y
@@ -176,8 +181,11 @@ TCpu6502 = object
   procedure OpCLD;    //< opcode $D8 - clear decimal flag
   procedure OpCMPabsY;//< opcode $D9 - compare A with abs,Y
   procedure OpCMPabsX;//< opcode $DD - compare A with abs,X
+  procedure OpCPXimm; //< opcode $E0 - compare X with imm
+  procedure OpCPXzp;  //< opcode $E4 - compare X with zp
   procedure OpINX;    //< opcode $E8 - increment X
   procedure OpNOP;    //< opcode $EA - no operation
+  procedure OpCPXabs; //< opcode $EC - compare X with abs
   procedure OpBEQ;    //< opcode $F0 - branch if equal
   procedure OpSED;    //< opcode $F8 - set decimal flag
 
@@ -495,6 +503,22 @@ var
   tmp: byte;
 begin
   tmp := A - m;
+  AluUpdateNZC(tmp);
+end;
+
+procedure TCpu6502.AluCPX(const m: byte);
+var
+  tmp: byte;
+begin
+  tmp := X - m;
+  AluUpdateNZC(tmp);
+end;
+
+procedure TCpu6502.AluCPY(const m: byte);
+var
+  tmp: byte;
+begin
+  tmp := Y - m;
   AluUpdateNZC(tmp);
 end;
 
@@ -959,9 +983,19 @@ begin
   AluUpdateNZ(X);
 end;
 
+procedure TCpu6502.OpCPYimm; { opcode $C0 }
+begin
+  AluCPY(LoadImm);
+end;
+
 procedure TCpu6502.OpCMPindX; { opcode $C1 }
 begin
   AluCMP(LoadIndX);
+end;
+
+procedure TCpu6502.OpCPYzp; { opcode $C4 }
+begin
+  AluCPY(LoadZp);
 end;
 
 procedure TCpu6502.OpCMPzp; { opcode $C5 }
@@ -984,6 +1018,11 @@ procedure TCpu6502.OpDEX;    { opcode $CA }
 begin
   dec(X);
   AluUpdateNZ(X);
+end;
+
+procedure TCpu6502.OpCPYabs; { opcode $CC }
+begin
+  AluCPY(LoadAbs);
 end;
 
 procedure TCpu6502.OpCMPabs; { opcode $CD - compare accumulator with abs }
@@ -1024,6 +1063,16 @@ begin
   AluCMP(LoadAbsX);
 end;
 
+procedure TCpu6502.OpCPXimm; { opcode $E0 }
+begin
+  AluCPX(LoadImm);
+end;
+
+procedure TCpu6502.OpCPXzp; { opcode $E4 }
+begin
+  AluCPX(LoadZp);
+end;
+
 procedure TCpu6502.OpINX;    { opcode $E8 }
 begin
   inc(X);
@@ -1032,6 +1081,11 @@ end;
 
 procedure TCpu6502.OpNOP;    { opcode $EA - no operation }
 begin
+end;
+
+procedure TCpu6502.OpCPXabs; { opcode $EC }
+begin
+  AluCPX(LoadAbs);
 end;
 
 procedure TCpu6502.OpBEQ;    { opcode $D0 - branch if equal }
@@ -1125,11 +1179,14 @@ begin
   OpTbl[$BC] := @OpLDYabsX;
   OpTbl[$BD] := @OpLDAabsX;
   OpTbl[$BE] := @OpLDXabsY;
+  OpTbl[$C0] := @OpCPYimm;
   OpTbl[$C1] := @OpCMPindX;
+  OpTbl[$C4] := @OpCPYzp;
   OpTbl[$C5] := @OpCMPzp;
   OpTbl[$C8] := @OpINY;
   OpTbl[$C9] := @OpCMPimm;
   OpTbl[$CA] := @OpDEX;
+  OpTbl[$CC] := @OpCPYabs;
   OpTbl[$CD] := @OpCMPabs;
   OpTbl[$D0] := @OpBNE;      { branch if not equal }
   OpTbl[$D1] := @OpCMPindY;
@@ -1137,7 +1194,10 @@ begin
   OpTbl[$D8] := @OpCLD;      { clear decimal flag }
   OpTbl[$D9] := @OpCMPabsY;
   OpTbl[$DD] := @OpCMPabsX;
+  OpTbl[$E0] := @OpCPXimm;
+  OpTbl[$E4] := @OpCPXzp;
   OpTbl[$E8] := @OpINX;
+  OpTbl[$EC] := @OpCPXabs;
   OpTbl[$EA] := @OpNOP;      { no operation }
   OpTbl[$F0] := @OpBEQ;      { branch if equal }
   OpTbl[$F8] := @OpSED;	     { set decimal flag }
