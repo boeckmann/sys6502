@@ -164,12 +164,18 @@ TCpu6502 = object
   procedure OpLDYabsX;//< opcode $BC - load Y with abs,X
   procedure OpLDAabsX;//< opcode $BD - load A with abs,X
   procedure OpLDXabsY;//< opcode $BE - load X with abs,Y
+  procedure OpCMPindX;//< opcode $C1 - compare A with (ind,X)
+  procedure OpCMPzp;  //< opcode $C5 - compare A with zp
   procedure OpINY;    //< opcode $C8 - increment Y
   procedure OpCMPimm; //< opcode $C9 - compare accumulator with immediate
   procedure OpDEX;    //< opcode $CA - decrement X
-  procedure OpCMPabs; //< opcode $CD - compare accumulator with abs
+  procedure OpCMPabs; //< opcode $CD - compare A with abs
   procedure OpBNE;    //< opcode $D0 - branch if not equal
+  procedure OpCMPindY;//< opcode $D1 - compare A with (ind),Y
+  procedure OpCMPzpX; //< opcode $D5 - compare A with zp,X
   procedure OpCLD;    //< opcode $D8 - clear decimal flag
+  procedure OpCMPabsY;//< opcode $D9 - compare A with abs,Y
+  procedure OpCMPabsX;//< opcode $DD - compare A with abs,X
   procedure OpINX;    //< opcode $E8 - increment X
   procedure OpNOP;    //< opcode $EA - no operation
   procedure OpBEQ;    //< opcode $F0 - branch if equal
@@ -953,6 +959,16 @@ begin
   AluUpdateNZ(X);
 end;
 
+procedure TCpu6502.OpCMPindX; { opcode $C1 }
+begin
+  AluCMP(LoadIndX);
+end;
+
+procedure TCpu6502.OpCMPzp; { opcode $C5 }
+begin
+  AluCMP(LoadZp);
+end;
+
 procedure TCpu6502.OpINY;    { opcode $C8 }
 begin
   inc(Y);
@@ -983,9 +999,29 @@ begin
   if not FlagZ then PCAddByteSigned(rel);
 end;
 
+procedure TCpu6502.OpCMPindY; { opcode $D1 }
+begin
+  AluCMP(LoadIndY);
+end;
+
+procedure TCpu6502.OpCMPzpX; { opcode $D5 }
+begin
+  AluCMP(LoadZpX);
+end;
+
 procedure TCpu6502.OpCLD;    { opcode $D8 - clear decimal flag }
 begin
   FlagD := false;
+end;
+
+procedure TCpu6502.OpCMPabsY; { opcode $D9 }
+begin
+  AluCMP(LoadAbsY);
+end;
+
+procedure TCpu6502.OpCMPabsX; { opcode $DD }
+begin
+  AluCMP(LoadAbsX);
 end;
 
 procedure TCpu6502.OpINX;    { opcode $E8 }
@@ -1089,12 +1125,18 @@ begin
   OpTbl[$BC] := @OpLDYabsX;
   OpTbl[$BD] := @OpLDAabsX;
   OpTbl[$BE] := @OpLDXabsY;
+  OpTbl[$C1] := @OpCMPindX;
+  OpTbl[$C5] := @OpCMPzp;
   OpTbl[$C8] := @OpINY;
   OpTbl[$C9] := @OpCMPimm;
   OpTbl[$CA] := @OpDEX;
   OpTbl[$CD] := @OpCMPabs;
   OpTbl[$D0] := @OpBNE;      { branch if not equal }
+  OpTbl[$D1] := @OpCMPindY;
+  OpTbl[$D5] := @OpCMPzpX;
   OpTbl[$D8] := @OpCLD;      { clear decimal flag }
+  OpTbl[$D9] := @OpCMPabsY;
+  OpTbl[$DD] := @OpCMPabsX;
   OpTbl[$E8] := @OpINX;
   OpTbl[$EA] := @OpNOP;      { no operation }
   OpTbl[$F0] := @OpBEQ;      { branch if equal }
