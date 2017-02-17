@@ -628,14 +628,6 @@ begin
   AluADC(m);
 end;
 
-procedure TCpu6502.OpADCindY; { opcode $71 }
-var
-  m: byte;
-begin
-  m := LoadIndY;
-  AluADC(m);
-end;
-
 procedure TCpu6502.OpADCabs; { opcode $6D }
 var
   m: byte;
@@ -650,6 +642,14 @@ var
 begin
   rel := LoadByteIncPC;
   if FlagV then PCAddByteSigned(rel);
+end;
+
+procedure TCpu6502.OpADCindY; { opcode $71 }
+var
+  m: byte;
+begin
+  m := LoadIndY;
+  AluADC(m);
 end;
 
 procedure TCpu6502.OpADCzpX; { opcode $75 }
