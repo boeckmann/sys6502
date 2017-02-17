@@ -7,7 +7,7 @@ uses
 
 const
   MAX_MEM = $ffff;
-
+  PC_HALT = $FFFC;	// no further execution if PC = PC_HALT
 var
   cpu: TCpu6502;
   mem: array[0..MAX_MEM] of byte;
@@ -80,9 +80,11 @@ begin
   WriteLn('  ------------');
   WriteLn('   c : show cpu status (pc, registers, flags)');
   WriteLn('   l <file> [addr] : load <file> to addr if given, else to $0200');
+  WriteLn('   m <num>: dump page <num>');
   WriteLn('   p : dump page pc points to');
   WriteLn('   q : quit');
   WriteLn('   r : run until pc=$FFFC');
+  WriteLn('   s : execute next instruction');
 end;
 
 procedure DoMemdump(const start: word; const len: word);
@@ -90,7 +92,7 @@ var
   f, t, i: word;
 begin
   f := start;
-  while f < start + len do begin
+  while (f <= start + len - 1) and (f >= start) do begin
     t := min(f+15, start+len-1);
 
     Write(IntToHex(f, 4));
@@ -110,12 +112,20 @@ var
   page: word;
 begin
   page := addr shr 8;
-  DoMemdump(page shl 8, 256);
+  DoMemdump(page shl 8, $100);
 end;
 
 procedure DoRun;
 begin
   cpu.ExecuteTo($FFFC);
+end;
+
+procedure DoStep;
+begin
+  if cpu.PC <> PC_HALT then begin
+    cpu.ExecuteNext;
+  end;
+  cpu.DumpRegs;
 end;
 
 function ReadCommand : string;
@@ -174,6 +184,17 @@ begin
     end else ShowError('no file given');
   end
   
+  else if token = 'm' then begin
+    arg1 := NextToken(cmd, pos);
+    if arg1 <> '' then begin
+      if ParseNumber(arg1,narg1) then
+        DoMemdumpPage(narg1 * $100)
+      else
+        ShowError('page number expected');
+    end else
+      ShowError('page number expected');
+  end
+
   else if token = 'p' then begin  { show page memory containing PC }
     DoMemdumpPage(cpu.PC);
   end
@@ -184,6 +205,10 @@ begin
   
   else if token = 'r' then begin   { run simulator until PC=$FFFC }
     DoRun;
+  end
+
+  else if token = 's' then begin
+    DoStep;
   end
 
   else begin
