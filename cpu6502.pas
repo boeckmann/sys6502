@@ -20,6 +20,8 @@ TCpu6502 = object
   A: byte;		//< 8-bit accumulator register A
   X: byte;		//< 8-bit register X
   Y: byte;		//< 8-bit register Y
+  S: byte;              //< 8-bit stack register
+
   FlagC: boolean;	//< carry flag
   FlagZ: boolean;	//< zero flag
   FlagI: boolean;	//< interrupt disable flag
@@ -99,12 +101,18 @@ TCpu6502 = object
   procedure AluUpdateNZ(const op: byte); inline;
   procedure AluUpdateNZC(const op: byte); inline;
 
+  { stack routines }
+  { }
+  procedure PushStack(v: byte);
+  function PullStack : byte;
+
   { opcode execution routines }
   { }
   procedure InitOpTbl;
   procedure OpORAindX;//< opcode $01 - bitwise or A with (ind,X)
   procedure OpORAzp;  //< opcode $05 - bitwise or A with zp
   procedure OpASLzp;  //< opcode $06 - arithmetic shift left zp
+  procedure OpPHP;    //< opcode $08 - push flags
   procedure OpORAimm; //< opcode $09 - bitwise or A with imm
   procedure OpASL;    //< opcode $0A - arithmetic shift left accumulator
   procedure OpORAabs; //< opcode $0D - bitwise or A with abs
@@ -120,6 +128,7 @@ TCpu6502 = object
   procedure OpANDindX;//< opcode $21 - and A with (ind,X)
   procedure OpANDzp;  //< opcode $25 - and A with zp
   procedure OpROLzp;  //< opcode $26 - rotate right zp
+  procedure OpPLP;    //< opcode $28 - pull flags
   procedure OpANDimm; //< opcode $29 - and A with imm
   procedure OpROL;    //< opcode $2A - rotate right A
   procedure OpANDabs; //< opcode $2D - and A with abs
@@ -135,6 +144,7 @@ TCpu6502 = object
   procedure OpEORindX;//< opcode $41 - eor A with (ind,X)
   procedure OpEORzp;  //< opcode $45 - eor A with zp
   procedure OpLSRzp;  //< opcode $46 - logical shift right zp
+  procedure OpPHA;    //< opcode $48 - push A
   procedure OpEORimm; //< opcode $49 - eor A with imm
   procedure OpLSR;    //< opcode $4A - logical shift right A
   procedure OpJMPabs; //< opcode $4C - jump absolute
@@ -151,6 +161,7 @@ TCpu6502 = object
   procedure OpADCindX;//< opcode $61 - add (ind,X) to accumulator with carry
   procedure OpADCzp;  //< opcode $65 - add zp to accumulator with carry
   procedure OpRORzp;  //< opcode $66 - rotate right zp
+  procedure OpPLA;    //< opcode $68 - pull A
   procedure OpADCimm; //< opcode $69 - add imm to accumulator with carry
   procedure OpROR;    //< opcode $6A - rotate right A
   procedure OpADCabs; //< opcode $6D - add abs to accumulator with carry
@@ -179,6 +190,7 @@ TCpu6502 = object
   procedure OpSTXzpY; //< opcode $96 - store X at zp,Y
   procedure OpTYA;    //< opcode $98 - transfer Y to A
   procedure OpSTAabsY;//< opcode $99 - store A at abs,Y
+  procedure OpTXS;    //< opcode $9A - store X in S
   procedure OpSTAabsX;//< opcode $9D - store A at abs,X
   procedure OpLDYimm; //< opcode $A0 - load Y with imm
   procedure OpLDAindX;//< opcode $A1 - load A with (ind,X)
@@ -199,6 +211,7 @@ TCpu6502 = object
   procedure OpLDXzpY; //< opcode $B6 - load X with zp,Y
   procedure OpCLV;    //< opcode $B8 - clear overflow flag
   procedure OpLDAabsY;//< opcode $B9 - load A with abs,Y
+  procedure OpTSX;    //< opcode $BA - store S in X
   procedure OpLDYabsX;//< opcode $BC - load Y with abs,X
   procedure OpLDAabsX;//< opcode $BD - load A with abs,X
   procedure OpLDXabsY;//< opcode $BE - load X with abs,Y
@@ -256,6 +269,16 @@ const
   BIT_4 = $010; BIT_5 = $020; BIT_6 = $040; BIT_7 = $080;
   BIT_8 = $100;
 
+
+function BtoD(const b: boolean; const v: byte) : byte; inline;
+begin
+  if b then BtoD := v else BtoD := 0;
+end;
+
+function DtoB(const v: byte) : boolean; inline;
+begin
+  DToB := v <> 0;
+end;
 
 constructor TCpu6502.Init(const load: TLoadFunc; const store: TStoreProc);
 begin
@@ -512,6 +535,21 @@ begin
 end;
 
 
+{--- stack functions ---------------------------------------------------------}
+
+procedure TCpu6502.PushStack(v: byte);
+begin
+  StoreByte($100 + S, v);
+  dec(S);
+end;
+
+function TCpu6502.PullStack : byte;
+begin
+  inc(S);
+  PullStack := LoadByte($100 + S);
+end;
+
+
 {--- ALU functions -----------------------------------------------------------}
 
 procedure TCpu6502.AluADC(const m: byte);
@@ -666,6 +704,15 @@ begin
   StoreByte(addr, tmp);
 end;
 
+procedure TCpu6502.OpPHP; { opcode $08 }
+var
+  tmp: byte;
+begin
+  tmp := BtoD(FlagC, $01) or BtoD(FlagZ, $02) or BtoD(FlagI, $04) or BtoD(FlagD, $08) or
+         BtoD(FlagB, $10) or BtoD(FlagV, $40) or BtoD(FlagN, $80);
+  PushStack(tmp);
+end;
+
 procedure TCpu6502.OpORAimm; { opcode $09 }
 begin
   AluORA(LoadImm);
@@ -764,6 +811,20 @@ begin
   StoreByte(addr, tmp);
 end;
 
+procedure TCpu6502.OpPLP; { opcode $28 }
+var
+  tmp: byte;
+begin
+  tmp := PullStack;
+  FlagC := DtoB(tmp and $01);
+  FlagZ := DtoB(tmp and $02);
+  FlagI := DtoB(tmp and $04);
+  FlagD := DtoB(tmp and $08);
+  FlagB := DtoB(tmp and $10);
+  FlagV := DtoB(tmp and $40);
+  FlagN := DtoB(tmp and $80);
+end;
+
 procedure TCpu6502.OpANDimm; { opcode $29 }
 begin
   AluAND(LoadImm);
@@ -860,6 +921,11 @@ begin
   tmp := LoadZpWithAddr(addr);
   tmp := AluLSR(tmp);
   StoreByte(addr, tmp);
+end;
+
+procedure TCpu6502.OpPHA; { opcode $48 }
+begin
+  PushStack(A);
 end;
 
 procedure TCpu6502.OpEORimm; { opcode $49 }
@@ -969,6 +1035,11 @@ begin
   tmp := LoadZpWithAddr(addr);
   tmp := AluROR(tmp);
   StoreByte(addr, tmp);
+end;
+
+procedure TCpu6502.OpPLA; { opcode $68 }
+begin
+  A := PullStack;
 end;
 
 procedure TCpu6502.OpADCimm; { opcode $69 - add immediate to accumulator with carry }
@@ -1153,6 +1224,11 @@ begin
   StoreAbsY(A);
 end;
 
+procedure TCpu6502.OpTXS; { opcode $9A }
+begin
+  S := X;
+end;
+
 procedure TCpu6502.OpSTAabsX; { opcode $9D }
 begin
   StoreAbsX(A);
@@ -1271,6 +1347,11 @@ procedure TCpu6502.OpLDAabsY; { opcode $B9 }
 begin
   A := LoadAbsY;
   AluUpdateNZ(A);
+end;
+
+procedure TCpu6502.OpTSX; { opcode $BA }
+begin
+  X := S;
 end;
 
 procedure TCpu6502.OpLDYabsX; { opcode $BC }
@@ -1566,6 +1647,7 @@ begin
   OpTbl[$01] := @OpORAindX;
   OpTbl[$05] := @OpORAzp;
   OpTbl[$06] := @OpASLzp;
+  OpTbl[$08] := @OpPHP;
   OpTbl[$09] := @OpORAimm;
   OpTbl[$0A] := @OpASL;
   OpTbl[$0D] := @OpORAabs;
@@ -1581,6 +1663,7 @@ begin
   OpTbl[$21] := @OpANDindX;
   OpTbl[$25] := @OpANDzp;
   OpTbl[$26] := @OpROLzp;
+  OpTbl[$28] := @OpPLP;
   OpTbl[$29] := @OpANDimm;
   OpTbl[$2A] := @OpROL;
   OpTbl[$2D] := @OpANDabs;
@@ -1596,6 +1679,7 @@ begin
   OpTbl[$41] := @OpEORindX;
   OpTbl[$45] := @OpEORzp;
   OpTbl[$46] := @OpLSRzp;
+  OpTbl[$48] := @OpPHA;
   OpTbl[$49] := @OpEORimm;
   OpTbl[$4A] := @OpLSR;
   OpTbl[$4C] := @OpJMPabs;   { jump absolute }
@@ -1610,6 +1694,7 @@ begin
   OpTbl[$5E] := @OpLSRabsX;
   OpTbl[$61] := @OpADCindX;
   OpTbl[$65] := @OpADCzp;
+  OpTbl[$68] := @OpPLA;
   OpTbl[$69] := @OpADCimm;   { add immediate to accumulator with carry }
   OpTbl[$6D] := @OpADCabs;
   OpTbl[$70] := @OpBVS;      { branch if overflow set }
@@ -1634,6 +1719,7 @@ begin
   OpTbl[$96] := @OpSTXzpY;
   OpTbl[$98] := @OpTYA;
   OpTbl[$99] := @OpSTAabsY;
+  OpTbl[$9A] := @OpTXS;
   OpTbl[$9D] := @OpSTAabsX;
   OpTbl[$A0] := @OpLDYimm;
   OpTbl[$A1] := @OpLDAindX;
@@ -1654,6 +1740,7 @@ begin
   OpTbl[$B6] := @OpLDXzpY;
   OpTbl[$B8] := @OpCLV;      { clear overflow flag }
   OpTbl[$B9] := @OpLDAabsY;
+  OpTbl[$BA] := @OpTSX;
   OpTbl[$BC] := @OpLDYabsX;
   OpTbl[$BD] := @OpLDAabsX;
   OpTbl[$BE] := @OpLDXabsY;
