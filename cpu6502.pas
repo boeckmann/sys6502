@@ -210,12 +210,20 @@ TCpu6502 = object
   procedure OpCMPabsY;//< opcode $D9 - compare A with abs,Y
   procedure OpCMPabsX;//< opcode $DD - compare A with abs,X
   procedure OpCPXimm; //< opcode $E0 - compare X with imm
+  procedure OpSBCindX;//< opcode $E1 - subtract (ind,X) from A with carry
   procedure OpCPXzp;  //< opcode $E4 - compare X with zp
+  procedure OpSBCzp;  //< opcode $E5 - subtract zp from A with carry
   procedure OpINX;    //< opcode $E8 - increment X
+  procedure OpSBCimm; //< opcode $E9 - subtract imm from A with carry
   procedure OpNOP;    //< opcode $EA - no operation
   procedure OpCPXabs; //< opcode $EC - compare X with abs
+  procedure OpSBCabs; //< opcode $ED - subtract abs from A with carry
   procedure OpBEQ;    //< opcode $F0 - branch if equal
+  procedure OpSBCindY;//< opcode $F1 - subtract (ind),Y from A with carry
+  procedure OpSBCzpX; //< opcode $F5 - subtract zp,X from A with carry
   procedure OpSED;    //< opcode $F8 - set decimal flag
+  procedure OpSBCabsY;//< opcode $F9 - subtract abs,Y from A with carry
+  procedure OpSBCabsX;//< opcode $FD - subtract abs,X from A with carry
 
   { debugging routines }
   { }
@@ -1288,15 +1296,39 @@ begin
   AluCPX(LoadImm);
 end;
 
+procedure TCpu6502.OpSBCindX; { opcode $E1 }
+var
+  m: byte;
+begin
+  m := LoadindX;
+  AluSBC(m);
+end;
+
 procedure TCpu6502.OpCPXzp; { opcode $E4 }
 begin
   AluCPX(LoadZp);
+end;
+
+procedure TCpu6502.OpSBCzp; { opcode $E5 }
+var
+  m: byte;
+begin
+  m := LoadZp;
+  AluSBC(m);
 end;
 
 procedure TCpu6502.OpINX;    { opcode $E8 }
 begin
   inc(X);
   AluUpdateNZ(X);
+end;
+
+procedure TCpu6502.OpSBCimm; { opcode $E9 }
+var
+  m: byte;
+begin
+  m := LoadImm;
+  AluSBC(m);
 end;
 
 procedure TCpu6502.OpNOP;    { opcode $EA - no operation }
@@ -1308,7 +1340,15 @@ begin
   AluCPX(LoadAbs);
 end;
 
-procedure TCpu6502.OpBEQ;    { opcode $D0 - branch if equal }
+procedure TCpu6502.OpSBCabs; { opcode $ED }
+var
+  m: byte;
+begin
+  m := LoadAbs;
+  AluSBC(m);
+end;
+
+procedure TCpu6502.OpBEQ;    { opcode $F0 - branch if equal }
 var
   rel: byte;
 begin
@@ -1316,9 +1356,42 @@ begin
   if FlagZ then PCAddByteSigned(rel);
 end;
 
+procedure TCpu6502.OpSBCindY; { opcode $F1 }
+var
+  m: byte;
+begin
+  m := LoadindY;
+  AluSBC(m);
+end;
+
+
+procedure TCpu6502.OpSBCzpX; { opcode $F5 }
+var
+  m: byte;
+begin
+  m := LoadZpX;
+  AluSBC(m);
+end;
+
 procedure TCpu6502.OpSED;    { opcode $F8 - set decimal flag }
 begin
   FlagD := true;
+end;
+
+procedure TCpu6502.OpSBCabsY; { opcode $F9 }
+var
+  m: byte;
+begin
+  m := LoadAbsY;
+  AluSBC(m);
+end;
+
+procedure TCpu6502.OpSBCabsX; { opcode $FD }
+var
+  m: byte;
+begin
+  m := LoadAbsX;
+  AluSBC(m);
 end;
 
 
@@ -1435,12 +1508,20 @@ begin
   OpTbl[$D9] := @OpCMPabsY;
   OpTbl[$DD] := @OpCMPabsX;
   OpTbl[$E0] := @OpCPXimm;
+  OpTbl[$E1] := @OpSBCindX;
   OpTbl[$E4] := @OpCPXzp;
+  OpTbl[$E5] := @OpSBCzp;
   OpTbl[$E8] := @OpINX;
+  OpTbl[$E9] := @OpSBCimm;
   OpTbl[$EC] := @OpCPXabs;
+  OpTbl[$ED] := @OpSBCabs;
   OpTbl[$EA] := @OpNOP;      { no operation }
   OpTbl[$F0] := @OpBEQ;      { branch if equal }
+  OpTbl[$F1] := @OpSBCindY;
+  OpTbl[$F5] := @OpSBCzpX;
   OpTbl[$F8] := @OpSED;	     { set decimal flag }
+  OpTbl[$F9] := @OpSBCabsY;
+  OpTbl[$FD] := @OpSBCabsX;
 end;
 
 procedure TCpu6502.DumpRegs;
