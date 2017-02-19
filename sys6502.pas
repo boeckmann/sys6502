@@ -165,11 +165,11 @@ begin
   if token = 'c' then begin   { show cpu status }
     DoCpuStatus;
   end
-  
+
   else if token = 'h' then begin
     DoHelp;
   end
-  
+
   else if token = 'l' then begin   { load data (program) }
     arg1 := NextToken(cmd, pos);
     if arg1 <> '' then begin
@@ -183,7 +183,7 @@ begin
         DoLoad(arg1, $0200);
     end else ShowError('no file given');
   end
-  
+
   else if token = 'm' then begin
     arg1 := NextToken(cmd, pos);
     if arg1 <> '' then begin
@@ -202,7 +202,7 @@ begin
   else if token = 'q' then begin   { quit simulator }
     terminating := true;
   end
-  
+
   else if token = 'r' then begin   { run simulator until PC=$FFFC }
     DoRun;
   end

@@ -210,7 +210,7 @@ begin
   LoadByte := load;
   StoreByte := store;
 
-  InitOpTbl;  
+  InitOpTbl;
 end;
 
 procedure TCpu6502.ResetCPU;
