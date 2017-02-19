@@ -105,7 +105,7 @@ TCpu6502 = object
   procedure OpORAabs; //< opcode $0D - bitwise or A with abs
   procedure OpASLabs; //< opcode $0E - arithmetic shift left abs
   procedure OpBPL;    //< opcode $10 - branch on PLus
-  procedure OpORAindY;//< opcode $11 - bitwise or A with (ind,Y)
+  procedure OpORAindY;//< opcode $11 - bitwise or A with (ind),Y
   procedure OpORAzpX; //< opcode $15 - bitwise or A with zp,X
   procedure OpASLzpX; //< opcode $16 - arithmetic shift left zp,X
   procedure OpCLC;    //< opcode $18 - clear carry
