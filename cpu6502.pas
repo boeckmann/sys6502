@@ -88,6 +88,8 @@ TCpu6502 = object
   procedure AluCMP(const m: byte); inline;
   procedure AluCPX(const m: byte); inline;
   procedure AluCPY(const m: byte); inline;
+  function AluINC(const m: byte) : byte; inline;
+  function AluDEC(const m: byte) : byte; inline;
   function AluASL(const m: byte) : byte; inline;
   function AluROL(const m: byte) : byte; inline;
   function AluROR(const m: byte) : byte; inline;
@@ -198,17 +200,21 @@ TCpu6502 = object
   procedure OpCMPindX;//< opcode $C1 - compare A with (ind,X)
   procedure OpCPYzp;  //< opcode $C4 - compare Y with zp
   procedure OpCMPzp;  //< opcode $C5 - compare A with zp
+  procedure OpDECzp;  //< opcode $C6 - decrement zp
   procedure OpINY;    //< opcode $C8 - increment Y
   procedure OpCMPimm; //< opcode $C9 - compare accumulator with immediate
   procedure OpDEX;    //< opcode $CA - decrement X
   procedure OpCPYabs; //< opcode $CC - compare Y with abs
   procedure OpCMPabs; //< opcode $CD - compare A with abs
+  procedure OpDECabs; //< opcode $CE - decrement abs
   procedure OpBNE;    //< opcode $D0 - branch if not equal
   procedure OpCMPindY;//< opcode $D1 - compare A with (ind),Y
   procedure OpCMPzpX; //< opcode $D5 - compare A with zp,X
+  procedure OpDECzpX; //< opcode $D6 - decrement zp,X
   procedure OpCLD;    //< opcode $D8 - clear decimal flag
   procedure OpCMPabsY;//< opcode $D9 - compare A with abs,Y
   procedure OpCMPabsX;//< opcode $DD - compare A with abs,X
+  procedure OpDECabsX;//< opcode $DE - decrement abs,X
   procedure OpCPXimm; //< opcode $E0 - compare X with imm
   procedure OpSBCindX;//< opcode $E1 - subtract (ind,X) from A with carry
   procedure OpCPXzp;  //< opcode $E4 - compare X with zp
@@ -556,6 +562,18 @@ var
 begin
   tmp := Y - m;
   AluUpdateNZC(tmp);
+end;
+
+function TCpu6502.AluINC(const m: byte) : byte;
+begin
+  AluINC := m + 1;
+  AluUpdateNZ(AluINC);
+end;
+
+function TCpu6502.AluDEC(const m: byte) : byte;
+begin
+  AluDEC := m - 1;
+  AluUpdateNZ(AluDEC);
 end;
 
 function TCpu6502.AluASL(const m: byte) : byte;
@@ -1231,6 +1249,16 @@ begin
   AluCMP(LoadZp);
 end;
 
+procedure TCpu6502.OpDECzp; { opcode $C6 }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadZpWithAddr(addr);
+  tmp := AluDEC(tmp);
+  StoreByte(addr, tmp);
+end;
+
 procedure TCpu6502.OpINY;    { opcode $C8 }
 begin
   inc(Y);
@@ -1251,6 +1279,16 @@ end;
 procedure TCpu6502.OpCPYabs; { opcode $CC }
 begin
   AluCPY(LoadAbs);
+end;
+
+procedure TCpu6502.OpDECabs; { opcode $CE }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadAbsWithAddr(addr);
+  tmp := AluDEC(tmp);
+  StoreByte(addr, tmp);
 end;
 
 procedure TCpu6502.OpCMPabs; { opcode $CD - compare accumulator with abs }
@@ -1276,6 +1314,16 @@ begin
   AluCMP(LoadZpX);
 end;
 
+procedure TCpu6502.OpDECzpX; { opcode $D6 }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadZpXWithAddr(addr);
+  tmp := AluDEC(tmp);
+  StoreByte(addr, tmp);
+end;
+
 procedure TCpu6502.OpCLD;    { opcode $D8 - clear decimal flag }
 begin
   FlagD := false;
@@ -1289,6 +1337,16 @@ end;
 procedure TCpu6502.OpCMPabsX; { opcode $DD }
 begin
   AluCMP(LoadAbsX);
+end;
+
+procedure TCpu6502.OpDECabsX; { opcode $DE }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadAbsXWithAddr(addr);
+  tmp := AluDEC(tmp);
+  StoreByte(addr, tmp);
 end;
 
 procedure TCpu6502.OpCPXimm; { opcode $E0 }
@@ -1496,17 +1554,21 @@ begin
   OpTbl[$C1] := @OpCMPindX;
   OpTbl[$C4] := @OpCPYzp;
   OpTbl[$C5] := @OpCMPzp;
+  OpTbl[$C6] := @OpDECzp;
   OpTbl[$C8] := @OpINY;
   OpTbl[$C9] := @OpCMPimm;
   OpTbl[$CA] := @OpDEX;
   OpTbl[$CC] := @OpCPYabs;
   OpTbl[$CD] := @OpCMPabs;
+  OpTbl[$CE] := @OpDECabs;
   OpTbl[$D0] := @OpBNE;      { branch if not equal }
   OpTbl[$D1] := @OpCMPindY;
   OpTbl[$D5] := @OpCMPzpX;
+  OpTbl[$D6] := @OpDECzpX;
   OpTbl[$D8] := @OpCLD;      { clear decimal flag }
   OpTbl[$D9] := @OpCMPabsY;
   OpTbl[$DD] := @OpCMPabsX;
+  OpTbl[$DE] := @OpDECabsX;
   OpTbl[$E0] := @OpCPXimm;
   OpTbl[$E1] := @OpSBCindX;
   OpTbl[$E4] := @OpCPXzp;
