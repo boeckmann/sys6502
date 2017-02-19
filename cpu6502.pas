@@ -89,6 +89,8 @@ TCpu6502 = object
   procedure AluCPX(const m: byte); inline;
   procedure AluCPY(const m: byte); inline;
   function AluASL(const m: byte) : byte; inline;
+  function AluROL(const m: byte) : byte; inline;
+  function AluROR(const m: byte) : byte; inline;
 
   procedure AluUpdateFlags(const op1: byte; const op2: byte; const res: word); inline;
   procedure AluUpdateNZ(const op: byte); inline;
@@ -543,6 +545,28 @@ begin
   FlagC := (m and $80) <> 0;
   AluASL := m shl 1;
   AluUpdateNZ(AluASL);
+end;
+
+function TCpu6502.AluROL(const m: byte) : byte;
+var
+  tmpC: boolean;
+begin
+  tmpC := FlagC;
+  FlagC := (m and 1) <> 0;
+  AluROL := (m shl 1);
+  if tmpC then AluROL := AluROL or $F0;
+  AluUpdateNZ(AluROL);
+end;
+
+function TCpu6502.AluROR(const m: byte) : byte;
+var
+  tmpC: boolean;
+begin
+  tmpC := FlagC;
+  FlagC := (m and $F0) <> 0;
+  AluROR := (m shr 1);
+  if tmpC then AluROR := AluROR or 1;
+  AluUpdateNZ(AluROR);
 end;
 
 procedure TCpu6502.AluUpdateFlags(const op1: byte; const op2: byte; const res: word);
