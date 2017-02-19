@@ -116,14 +116,19 @@ TCpu6502 = object
   procedure OpASLabsX;//< opcode $1E - arithmetic shift left abs,X
   procedure OpANDindX;//< opcode $21 - and A with (ind,X)
   procedure OpANDzp;  //< opcode $25 - and A with zp
+  procedure OpROLzp;  //< opcode $26 - rotate right zp
   procedure OpANDimm; //< opcode $29 - and A with imm
+  procedure OpROL;    //< opcode $2A - rotate right A
   procedure OpANDabs; //< opcode $2D - and A with abs
+  procedure OpROLabs; //< opcode $2E - rotate right abs
   procedure OpBMI;    //< opcode $30 - branch on MInus
   procedure OpANDindY;//< opcode $31 - and A with (ind),Y
   procedure OpANDzpX; //< opcode $35 - and A with zp,X
+  procedure OpROLzpX; //< opcode $36 - rotate right zp,X
   procedure OpSEC;    //< opcode $38 - set carry flag
   procedure OpANDabsY;//< opcode $39 - and A with abs,Y
   procedure OpANDabsX;//< opcode $3D - and A with abs,X
+  procedure OpROLabsX;//< opcode $3E - rotate right abs,X
   procedure OpEORindX;//< opcode $41 - eor A with (ind,X)
   procedure OpEORzp;  //< opcode $45 - eor A with zp
   procedure OpEORimm; //< opcode $49 - eor A with imm
@@ -701,14 +706,39 @@ begin
   AluAND(LoadZp);
 end;
 
+procedure TCpu6502.OpROLzp; {opcode $26 }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadZpWithAddr(addr);
+  tmp := AluROL(tmp);
+  StoreByte(addr, tmp);
+end;
+
 procedure TCpu6502.OpANDimm; { opcode $29 }
 begin
   AluAND(LoadImm);
 end;
 
+procedure TCpu6502.OpROL; { opcode $2A }
+begin
+  A := AluROL(A);
+end;
+
 procedure TCpu6502.OpANDabs; { opcode $2D }
 begin
   AluAND(LoadAbs);
+end;
+
+procedure TCpu6502.OpROLabs; {opcode $2E }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadAbsWithAddr(addr);
+  tmp := AluROL(tmp);
+  StoreByte(addr, tmp);
 end;
 
 procedure TCpu6502.OpBMI;    { opcode $30 - branch on MInus }
@@ -729,6 +759,16 @@ begin
   AluAND(LoadZpX);
 end;
 
+procedure TCpu6502.OpROLzpX; {opcode $36 }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadZpXWithAddr(addr);
+  tmp := AluROL(tmp);
+  StoreByte(addr, tmp);
+end;
+
 procedure TCpu6502.OpSEC;    { opcode $38 - set carry flag }
 begin
   FlagC := true;
@@ -742,6 +782,16 @@ end;
 procedure TCpu6502.OpANDabsX; { opcode $3D }
 begin
   AluAND(LoadAbsX);
+end;
+
+procedure TCpu6502.OpROLabsX; {opcode $3E }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadAbsXWithAddr(addr);
+  tmp := AluROL(tmp);
+  StoreByte(addr, tmp);
 end;
 
 procedure TCpu6502.OpEORindX; { opcode $41 }
@@ -1247,14 +1297,19 @@ begin
   OpTbl[$1E] := @OpASLabsX;
   OpTbl[$21] := @OpANDindX;
   OpTbl[$25] := @OpANDzp;
+  OpTbl[$26] := @OpROLzp;
   OpTbl[$29] := @OpANDimm;
+  OpTbl[$2A] := @OpROL;
   OpTbl[$2D] := @OpANDabs;
+  OpTbl[$2E] := @OpROLabs;
   OpTbl[$30] := @OpBMI;      { branch if minus }
   OpTbl[$31] := @OpANDindY;
   OpTbl[$35] := @OpANDzpX;
+  OpTbl[$36] := @OpROLzpX;
   OpTbl[$38] := @OpSEC;
   OpTbl[$39] := @OpANDabsY;
   OpTbl[$3D] := @OpANDabsX;
+  OpTbl[$3E] := @OpROLabsX;
   OpTbl[$41] := @OpEORindX;
   OpTbl[$45] := @OpEORzp;
   OpTbl[$49] := @OpEORimm;
