@@ -97,12 +97,20 @@ TCpu6502 = object
   { opcode execution routines }
   { }
   procedure InitOpTbl;
+  procedure OpORAindX;//< opcode $01 - bitwise or A with (ind,X)
+  procedure OpORAzp;  //< opcode $05 - bitwise or A with zp
   procedure OpASLzp;  //< opcode $06 - arithmetic shift left zp
+  procedure OpORAimm; //< opcode $09 - bitwise or A with imm
   procedure OpASL;    //< opcode $0A - arithmetic shift left accumulator
+  procedure OpORAabs; //< opcode $0D - bitwise or A with abs
   procedure OpASLabs; //< opcode $0E - arithmetic shift left abs
   procedure OpBPL;    //< opcode $10 - branch on PLus
+  procedure OpORAindY;//< opcode $11 - bitwise or A with (ind,Y)
+  procedure OpORAzpX; //< opcode $15 - bitwise or A with zp,X
   procedure OpASLzpX; //< opcode $16 - arithmetic shift left zp,X
   procedure OpCLC;    //< opcode $18 - clear carry
+  procedure OpORAabsY;//< opcode $19 - bitwise or A with abs,Y
+  procedure OpORAabsX;//< opcode $1D - bitwise or A with abs,X
   procedure OpASLabsX;//< opcode $1E - arithmetic shift left abs,X
   procedure OpANDindX;//< opcode $21 - and A with (ind,X)
   procedure OpANDzp;  //< opcode $25 - and A with zp
@@ -561,6 +569,16 @@ end;
 
 {--- opcode implementation ---------------------------------------------------}
 
+procedure TCpu6502.OpORAindX; { opcode $01 }
+begin
+  AluORA(LoadIndX);
+end;
+
+procedure TCpu6502.OpORAzp; { opcode $05 }
+begin
+  AluORA(LoadZp);
+end;
+
 procedure TCpu6502.OpASLzp; {opcode $06 }
 var
   addr: word;
@@ -571,9 +589,19 @@ begin
   StoreByte(addr, tmp);
 end;
 
+procedure TCpu6502.OpORAimm; { opcode $09 }
+begin
+  AluORA(LoadImm);
+end;
+
 procedure TCpu6502.OpASL; { opcode $0A }
 begin
   A := AluASL(A);
+end;
+
+procedure TCpu6502.OpORAabs; { opcode $0D }
+begin
+  AluORA(LoadAbs);
 end;
 
 procedure TCpu6502.OpASLabs; {opcode $0E }
@@ -586,6 +614,24 @@ begin
   StoreByte(addr, tmp);
 end;
 
+procedure TCpu6502.OpBPL;    { opcode $10 - branch on PLus }
+var
+  rel: byte;
+begin
+  rel := LoadByteIncPC;
+  if not FlagN then PCAddByteSigned(rel);
+end;
+
+procedure TCpu6502.OpORAindY; { opcode $11 }
+begin
+  AluORA(LoadIndY);
+end;
+
+procedure TCpu6502.OpORAzpX; { opcode $15 }
+begin
+  AluORA(LoadZpX);
+end;
+
 procedure TCpu6502.OpASLzpX; {opcode $16 }
 var
   addr: word;
@@ -596,17 +642,19 @@ begin
   StoreByte(addr, tmp);
 end;
 
-procedure TCpu6502.OpBPL;    { opcode $10 - branch on PLus }
-var
-  rel: byte;
-begin
-  rel := LoadByteIncPC;
-  if not FlagN then PCAddByteSigned(rel);
-end;
-
 procedure TCpu6502.OpCLC;    { opcode $18 - clear carry flag }
 begin
   FlagC := false;
+end;
+
+procedure TCpu6502.OpORAabsY; { opcode $19 }
+begin
+  AluORA(LoadAbsY);
+end;
+
+procedure TCpu6502.OpORAabsX; { opcode $1D }
+begin
+  AluORA(LoadAbsX);
 end;
 
 procedure TCpu6502.OpASLabsX; {opcode $1E }
@@ -1158,12 +1206,20 @@ begin
     OpTbl[i] := @OpNOP;
   end;
 
+  OpTbl[$01] := @OpORAindX;
+  OpTbl[$05] := @OpORAzp;
   OpTbl[$06] := @OpASLzp;
+  OpTbl[$09] := @OpORAimm;
   OpTbl[$0A] := @OpASL;
+  OpTbl[$0D] := @OpORAabs;
   OpTbl[$0E] := @OpASLabs;
   OpTbl[$10] := @OpBPL;      { branch if plus }
+  OpTbl[$11] := @OpORAindY;
+  OpTbl[$15] := @OpORAzpX;
   OpTbl[$16] := @OpASLzpX;
   OpTbl[$18] := @OpCLC;      { clear carry flag }
+  OpTbl[$19] := @OpORAabsY;
+  OpTbl[$1D] := @OpORAabsX;
   OpTbl[$1E] := @OpASLabsX;
   OpTbl[$21] := @OpANDindX;
   OpTbl[$25] := @OpANDzp;
