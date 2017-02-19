@@ -142,14 +142,19 @@ TCpu6502 = object
   procedure OpEORabsX;//< opcode $5D - eor A with abs,X
   procedure OpADCindX;//< opcode $61 - add (ind,X) to accumulator with carry
   procedure OpADCzp;  //< opcode $65 - add zp to accumulator with carry
+  procedure OpRORzp;  //< opcode $66 - rotate right zp
   procedure OpADCimm; //< opcode $69 - add imm to accumulator with carry
-  procedure OpADCindY;//< opcode $71 - add (ind),Y to accumulator with carry
+  procedure OpROR;    //< opcode $6A - rotate right A
   procedure OpADCabs; //< opcode $6D - add abs to accumulator with carry
+  procedure OpRORabs; //< opcode $6E - rotate right abs
   procedure OpBVS;    //< opcode $70 - branch if overflow set
+  procedure OpADCindY;//< opcode $71 - add (ind),Y to accumulator with carry
   procedure OpADCzpX; //< opcode $75 - add zp,X to accumulator with carry
+  procedure OpRORzpX; //< opcode $76 - rotate right zp,X
+  procedure OpSEI;    //< opcode $78 - set interrupt enable flag
   procedure OpADCabsY;//< opcode $79 - add abs,Y to accumulator with carry
   procedure OpADCabsX;//< opcode $7D - add abs,X to accumulator with carry
-  procedure OpSEI;    //< opcode $78 - set interrupt enable flag
+  procedure OpRORabsX;//< opcode $7E - rotate right abs
   procedure OpSTAindX;//< opcode $81 - store A at (ind,X)
   procedure OpSTYzp;  //< opcode $84 - store Y at zp
   procedure OpSTAzp;  //< opcode $85 - store accumulator at zp
@@ -868,6 +873,16 @@ begin
   AluADC(m);
 end;
 
+procedure TCpu6502.OpRORzp; {opcode $66 }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadZpWithAddr(addr);
+  tmp := AluROR(tmp);
+  StoreByte(addr, tmp);
+end;
+
 procedure TCpu6502.OpADCimm; { opcode $69 - add immediate to accumulator with carry }
 var
   m: byte;
@@ -876,12 +891,27 @@ begin
   AluADC(m);
 end;
 
+procedure TCpu6502.OpROR; { opcode $6A }
+begin
+  A := AluROR(A);
+end;
+
 procedure TCpu6502.OpADCabs; { opcode $6D }
 var
   m: byte;
 begin
   m := LoadAbs;
   AluADC(m);
+end;
+
+procedure TCpu6502.OpRORabs; {opcode $6E }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadAbsWithAddr(addr);
+  tmp := AluROR(tmp);
+  StoreByte(addr, tmp);
 end;
 
 procedure TCpu6502.OpBVS;    { opcode $70 - branch if overflow set }
@@ -908,6 +938,16 @@ begin
   AluADC(m);
 end;
 
+procedure TCpu6502.OpRORzpX; {opcode $76 }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadZpXWithAddr(addr);
+  tmp := AluROR(tmp);
+  StoreByte(addr, tmp);
+end;
+
 procedure TCpu6502.OpSEI;    { opcode $78 - set interrupt enable flag  }
 begin
   FlagI := true;
@@ -927,6 +967,16 @@ var
 begin
   m := LoadAbsX;
   AluADC(m);
+end;
+
+procedure TCpu6502.OpRORabsX; {opcode $7E }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadAbsXWithAddr(addr);
+  tmp := AluROR(tmp);
+  StoreByte(addr, tmp);
 end;
 
 procedure TCpu6502.OpSTAindX; { opcode $81 }
