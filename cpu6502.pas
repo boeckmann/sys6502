@@ -114,9 +114,17 @@ TCpu6502 = object
   procedure OpSEC;    //< opcode $38 - set carry flag
   procedure OpANDabsY;//< opcode $39 - and A with abs,Y
   procedure OpANDabsX;//< opcode $3D - and A with abs,X
+  procedure OpEORindX;//< opcode $41 - eor A with (ind,X)
+  procedure OpEORzp;  //< opcode $45 - eor A with zp
+  procedure OpEORimm; //< opcode $49 - eor A with imm
   procedure OpJMPabs; //< opcode $4C - jump absolute
+  procedure OpEORabs; //< opcode $4D - eor A with abs
   procedure OpBVC;    //< opcode $50 - branch if overflow clear
+  procedure OpEORindY;//< opcode $51 - eor A with (ind),Y
+  procedure OpEORzpX; //< opcode $55 - eor A with zp,X
   procedure OpCLI;    //< opcode $58 - clear interrupt enable flag
+  procedure OpEORabsY;//< opcode $59 - eor A with abs,Y
+  procedure OpEORabsX;//< opcode $5D - eor A with abs,X
   procedure OpADCindX;//< opcode $61 - add (ind,X) to accumulator with carry
   procedure OpADCzp;  //< opcode $65 - add zp to accumulator with carry
   procedure OpADCimm; //< opcode $69 - add imm to accumulator with carry
@@ -664,9 +672,29 @@ begin
   AluAND(LoadAbsX);
 end;
 
+procedure TCpu6502.OpEORindX; { opcode $41 }
+begin
+  AluEOR(LoadIndX);
+end;
+
+procedure TCpu6502.OpEORzp; { opcode $45 }
+begin
+  AluEOR(LoadZp);
+end;
+
+procedure TCpu6502.OpEORimm; { opcode $49 }
+begin
+  AluEOR(LoadImm);
+end;
+
 procedure TCpu6502.OpJMPabs; { opcode $4C - jump absolute }
 begin
   PC := LoadWordIncPC;
+end;
+
+procedure TCpu6502.OpEORabs; { opcode $4D }
+begin
+  AluEOR(LoadAbs);
 end;
 
 procedure TCpu6502.OpBVC;    { opcode $50 - branch if overflow clear }
@@ -677,9 +705,29 @@ begin
   if not FlagV then PCAddByteSigned(rel);
 end;
 
+procedure TCpu6502.OpEORindY; { opcode $51 }
+begin
+  AluEOR(LoadIndY);
+end;
+
+procedure TCpu6502.OpEORzpX; { opcode $55 }
+begin
+  AluEOR(LoadZpX);
+end;
+
 procedure TCpu6502.OpCLI;    { opcode $58 - clear interrupt enable flag  }
 begin
   FlagI := false;
+end;
+
+procedure TCpu6502.OpEORabsY; { opcode $59 }
+begin
+  AluEOR(LoadAbsY);
+end;
+
+procedure TCpu6502.OpEORabsX; { opcode $5D }
+begin
+  AluEOR(LoadAbsX);
 end;
 
 procedure TCpu6502.OpADCindX; { opcode $61 }
@@ -1127,9 +1175,16 @@ begin
   OpTbl[$38] := @OpSEC;
   OpTbl[$39] := @OpANDabsY;
   OpTbl[$3D] := @OpANDabsX;
+  OpTbl[$41] := @OpEORindX;
+  OpTbl[$45] := @OpEORzp;
+  OpTbl[$49] := @OpEORimm;
   OpTbl[$4C] := @OpJMPabs;   { jump absolute }
+  OpTbl[$4D] := @OpEORabs;
   OpTbl[$50] := @OpBVC;      { branch if overflow clear }
+  OpTbl[$51] := @OpEORindY;
+  OpTbl[$55] := @OpEORzpX;
   OpTbl[$58] := @OpCLI;      { clear interrupt flag }
+  OpTbl[$5D] := @OpEORabsX;
   OpTbl[$61] := @OpADCindX;
   OpTbl[$65] := @OpADCzp;
   OpTbl[$69] := @OpADCimm;   { add immediate to accumulator with carry }
