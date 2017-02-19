@@ -91,6 +91,7 @@ TCpu6502 = object
   function AluINC(const m: byte) : byte; inline;
   function AluDEC(const m: byte) : byte; inline;
   function AluASL(const m: byte) : byte; inline;
+  function AluLSR(const m: byte) : byte; inline;
   function AluROL(const m: byte) : byte; inline;
   function AluROR(const m: byte) : byte; inline;
 
@@ -133,15 +134,20 @@ TCpu6502 = object
   procedure OpROLabsX;//< opcode $3E - rotate right abs,X
   procedure OpEORindX;//< opcode $41 - eor A with (ind,X)
   procedure OpEORzp;  //< opcode $45 - eor A with zp
+  procedure OpLSRzp;  //< opcode $46 - logical shift right zp
   procedure OpEORimm; //< opcode $49 - eor A with imm
+  procedure OpLSR;    //< opcode $4A - logical shift right A
   procedure OpJMPabs; //< opcode $4C - jump absolute
   procedure OpEORabs; //< opcode $4D - eor A with abs
+  procedure OpLSRabs; //< opcode $4E - logical shift right abs
   procedure OpBVC;    //< opcode $50 - branch if overflow clear
   procedure OpEORindY;//< opcode $51 - eor A with (ind),Y
   procedure OpEORzpX; //< opcode $55 - eor A with zp,X
+  procedure OpLSRzpX; //< opcode $56 - logical shift right zp,X
   procedure OpCLI;    //< opcode $58 - clear interrupt enable flag
   procedure OpEORabsY;//< opcode $59 - eor A with abs,Y
   procedure OpEORabsX;//< opcode $5D - eor A with abs,X
+  procedure OpLSRabsX;//< opcode $5E - logical shift right abs,X
   procedure OpADCindX;//< opcode $61 - add (ind,X) to accumulator with carry
   procedure OpADCzp;  //< opcode $65 - add zp to accumulator with carry
   procedure OpRORzp;  //< opcode $66 - rotate right zp
@@ -587,6 +593,13 @@ begin
   AluUpdateNZ(AluASL);
 end;
 
+function TCpu6502.AluLSR(const m: byte) : byte;
+begin
+  FlagC := (m and $1) <> 0;
+  AluLSR := m shr 1;
+  AluUpdateNZ(AluLSR);
+end;
+
 function TCpu6502.AluROL(const m: byte) : byte;
 var
   tmpC: boolean;
@@ -839,9 +852,24 @@ begin
   AluEOR(LoadZp);
 end;
 
+procedure TCpu6502.OpLSRzp; {opcode $46 }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadZpWithAddr(addr);
+  tmp := AluLSR(tmp);
+  StoreByte(addr, tmp);
+end;
+
 procedure TCpu6502.OpEORimm; { opcode $49 }
 begin
   AluEOR(LoadImm);
+end;
+
+procedure TCpu6502.OpLSR; { opcode $4A }
+begin
+  A := AluLSR(A);
 end;
 
 procedure TCpu6502.OpJMPabs; { opcode $4C - jump absolute }
@@ -852,6 +880,16 @@ end;
 procedure TCpu6502.OpEORabs; { opcode $4D }
 begin
   AluEOR(LoadAbs);
+end;
+
+procedure TCpu6502.OpLSRabs; {opcode $4E }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadAbsWithAddr(addr);
+  tmp := AluLSR(tmp);
+  StoreByte(addr, tmp);
 end;
 
 procedure TCpu6502.OpBVC;    { opcode $50 - branch if overflow clear }
@@ -872,6 +910,16 @@ begin
   AluEOR(LoadZpX);
 end;
 
+procedure TCpu6502.OpLSRzpX; {opcode $56 }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadZpXWithAddr(addr);
+  tmp := AluLSR(tmp);
+  StoreByte(addr, tmp);
+end;
+
 procedure TCpu6502.OpCLI;    { opcode $58 - clear interrupt enable flag  }
 begin
   FlagI := false;
@@ -885,6 +933,16 @@ end;
 procedure TCpu6502.OpEORabsX; { opcode $5D }
 begin
   AluEOR(LoadAbsX);
+end;
+
+procedure TCpu6502.OpLSRabsX; {opcode $5E }
+var
+  addr: word;
+  tmp: byte;
+begin
+  tmp := LoadAbsXWithAddr(addr);
+  tmp := AluLSR(tmp);
+  StoreByte(addr, tmp);
 end;
 
 procedure TCpu6502.OpADCindX; { opcode $61 }
@@ -1537,14 +1595,19 @@ begin
   OpTbl[$3E] := @OpROLabsX;
   OpTbl[$41] := @OpEORindX;
   OpTbl[$45] := @OpEORzp;
+  OpTbl[$46] := @OpLSRzp;
   OpTbl[$49] := @OpEORimm;
+  OpTbl[$4A] := @OpLSR;
   OpTbl[$4C] := @OpJMPabs;   { jump absolute }
   OpTbl[$4D] := @OpEORabs;
+  OpTbl[$4E] := @OpLSRabs;
   OpTbl[$50] := @OpBVC;      { branch if overflow clear }
   OpTbl[$51] := @OpEORindY;
   OpTbl[$55] := @OpEORzpX;
+  OpTbl[$56] := @OpLSRzpX;
   OpTbl[$58] := @OpCLI;      { clear interrupt flag }
   OpTbl[$5D] := @OpEORabsX;
+  OpTbl[$5E] := @OpLSRabsX;
   OpTbl[$61] := @OpADCindX;
   OpTbl[$65] := @OpADCzp;
   OpTbl[$69] := @OpADCimm;   { add immediate to accumulator with carry }
