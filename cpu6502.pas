@@ -26,7 +26,6 @@ TCpu6502 = object
   FlagZ: boolean;	//< zero flag
   FlagI: boolean;	//< interrupt disable flag
   FlagD: boolean;	//< decimal flag
-  FlagB: boolean;	//< break flag
   FlagV: boolean;	//< overflow flag
   FlagS: boolean;	//< negative (sign) flag
 
@@ -115,6 +114,7 @@ TCpu6502 = object
   { opcode execution routines }
   { }
   procedure InitOpTbl;
+  procedure OpBRK;    //< opcode $00 - break
   procedure OpORAindX;//< opcode $01 - bitwise or A with (ind,X)
   procedure OpORAzp;  //< opcode $05 - bitwise or A with zp
   procedure OpASLzp;  //< opcode $06 - arithmetic shift left zp
@@ -303,6 +303,9 @@ end;
 procedure TCpu6502.ResetCPU;
 begin
   PC := LoadWord($FFFC);
+  S  := $FD;
+
+  FlagI := true;
 end;
 
 {--- high level execution routines  ------------------------------------------}
@@ -342,8 +345,7 @@ end;
 function TCpu6502.FlagsToByte : byte;
 begin
   FlagsToByte := BtoD(FlagC, $01) or BtoD(FlagZ, $02) or BtoD(FlagI, $04) or
-                 BtoD(FlagD, $08) or BtoD(FlagB, $10) or BtoD(FlagV, $40) or
-                 BtoD(FlagS, $80);
+                 BtoD(FlagD, $08) or BtoD(FlagV, $40) or BtoD(FlagS, $80);
 end;
 
 procedure TCpu6502.ByteToFlags(const b: byte);
@@ -352,7 +354,6 @@ begin
   FlagZ := DtoB(b and $02);
   FlagI := DtoB(b and $04);
   FlagD := DtoB(b and $08);
-  FlagB := DtoB(b and $10);
   FlagV := DtoB(b and $40);
   FlagS := DtoB(b and $80);
 end;
@@ -718,6 +719,18 @@ end;
 
 {--- opcode implementation ---------------------------------------------------}
 
+procedure TCpu6502.OpBRK; { opcode $00 }
+var
+  addr: word;
+begin
+  addr := LoadWord($FFFE);
+  PC := PC + 1;
+  PushStack(PC shr 8);
+  PushStack(PC and $FF);
+  PushStack(FlagsToByte or BIT_4 or BIT_5);
+  PC := addr;
+end;
+
 procedure TCpu6502.OpORAindX; { opcode $01 }
 begin
   AluORA(LoadIndX);
@@ -740,7 +753,7 @@ end;
 
 procedure TCpu6502.OpPHP; { opcode $08 }
 begin
-  PushStack(FlagsToByte);
+  PushStack(FlagsToByte or BIT_4 or BIT_5);
 end;
 
 procedure TCpu6502.OpORAimm; { opcode $09 }
@@ -1728,6 +1741,7 @@ begin
     OpTbl[i] := @OpNOP;
   end;
 
+  OpTbl[$00] := @OpBRK;
   OpTbl[$01] := @OpORAindX;
   OpTbl[$05] := @OpORAzp;
   OpTbl[$06] := @OpASLzp;
@@ -1879,7 +1893,6 @@ begin
   Write(Format('PC=%4.4x  A=%2.2x X=%2.2x Y=%2.2x S=%2.2x ', [PC, A, X, Y, S]));
   if FlagS then Write('S') else Write('.');
   if FlagV then Write('V') else Write('.');
-  if FlagB then Write('B') else Write('.');
   if FlagD then Write('D') else Write('.');
   if FlagI then Write('I') else Write('.');
   if FlagZ then Write('Z') else Write('.');

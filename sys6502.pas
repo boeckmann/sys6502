@@ -6,7 +6,7 @@ uses
   SysUtils, math, cpu6502;
 
 const
-  MAX_MEM = $ffff;
+  MAX_MEM = $FFFF;
   PC_HALT = $FFFC;	// no further execution if PC = PC_HALT
 var
   cpu: TCpu6502;
@@ -221,9 +221,8 @@ begin
   FillChar(mem, Length(mem), 0);    // init memory
   mem[$FFFC] := $00;                // set 6502 reset vector to $0200
   mem[$FFFD] := $02;
-  mem[$0200] := $4C;                // 0200: JMP $FFFC
-  mem[$0201] := $FC;                // absolute jump to $FFFC terminates sim loop
-  mem[$0202] := $FF;
+  mem[$FFFE] := $FC;                // set interrupt vector to terminate addr
+  mem[$FFFF] := $FF;
 
   cpu.Init(@LoadMem, @StoreMem);
   cpu.ResetCPU;
