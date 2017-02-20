@@ -47,6 +47,12 @@ TCpu6502 = object
   procedure ExecuteTo(pcBreak: word);
   procedure ExecuteToWithDump(pcBreak: word);
 
+  { flag functions }
+  { }
+  function FlagsToByte : byte; inline;
+  procedure ByteToFlags(const b: byte); inline;
+
+
   { fetch next byte from PC address and increment PC by 1 }
   function LoadByteIncPC : byte; inline;
   { fetch next word from PC address and increment PC by 2 }
@@ -103,8 +109,8 @@ TCpu6502 = object
 
   { stack routines }
   { }
-  procedure PushStack(v: byte);
-  function PullStack : byte;
+  procedure PushStack(v: byte); inline;
+  function PullStack : byte; inline;
 
   { opcode execution routines }
   { }
@@ -144,6 +150,7 @@ TCpu6502 = object
   procedure OpANDabsY;//< opcode $39 - and A with abs,Y
   procedure OpANDabsX;//< opcode $3D - and A with abs,X
   procedure OpROLabsX;//< opcode $3E - rotate right abs,X
+  procedure OpRTI;    //< opcode $40 - return from interrupt
   procedure OpEORindX;//< opcode $41 - eor A with (ind,X)
   procedure OpEORzp;  //< opcode $45 - eor A with zp
   procedure OpLSRzp;  //< opcode $46 - logical shift right zp
@@ -328,6 +335,28 @@ begin
     DumpRegs;
   end;
 end;
+
+
+{--- Flag functions -----------------------------------------------------------}
+
+function TCpu6502.FlagsToByte : byte;
+begin
+  FlagsToByte := BtoD(FlagC, $01) or BtoD(FlagZ, $02) or BtoD(FlagI, $04) or
+                 BtoD(FlagD, $08) or BtoD(FlagB, $10) or BtoD(FlagV, $40) or
+                 BtoD(FlagS, $80);
+end;
+
+procedure TCpu6502.ByteToFlags(const b: byte);
+begin
+  FlagC := DtoB(b and $01);
+  FlagZ := DtoB(b and $02);
+  FlagI := DtoB(b and $04);
+  FlagD := DtoB(b and $08);
+  FlagB := DtoB(b and $10);
+  FlagV := DtoB(b and $40);
+  FlagS := DtoB(b and $80);
+end;
+
 
 {--- PC and memory access functions -------------------------------------------}
 
@@ -710,12 +739,8 @@ begin
 end;
 
 procedure TCpu6502.OpPHP; { opcode $08 }
-var
-  tmp: byte;
 begin
-  tmp := BtoD(FlagC, $01) or BtoD(FlagZ, $02) or BtoD(FlagI, $04) or BtoD(FlagD, $08) or
-         BtoD(FlagB, $10) or BtoD(FlagV, $40) or BtoD(FlagS, $80);
-  PushStack(tmp);
+  PushStack(FlagsToByte);
 end;
 
 procedure TCpu6502.OpORAimm; { opcode $09 }
@@ -838,17 +863,8 @@ begin
 end;
 
 procedure TCpu6502.OpPLP; { opcode $28 }
-var
-  tmp: byte;
 begin
-  tmp := PullStack;
-  FlagC := DtoB(tmp and $01);
-  FlagZ := DtoB(tmp and $02);
-  FlagI := DtoB(tmp and $04);
-  FlagD := DtoB(tmp and $08);
-  FlagB := DtoB(tmp and $10);
-  FlagV := DtoB(tmp and $40);
-  FlagS := DtoB(tmp and $80);
+  ByteToFlags(PullStack);
 end;
 
 procedure TCpu6502.OpANDimm; { opcode $29 }
@@ -937,6 +953,13 @@ begin
   tmp := LoadAbsXWithAddr(addr);
   tmp := AluROL(tmp);
   StoreByte(addr, tmp);
+end;
+
+procedure TCpu6502.OpRTI; { opcode $40 }
+begin
+  ByteToFlags(PullStack);
+  PC := PullStack;
+  PC := PC or (PullStack shl 8);
 end;
 
 procedure TCpu6502.OpEORindX; { opcode $41 }
@@ -1740,6 +1763,7 @@ begin
   OpTbl[$39] := @OpANDabsY;
   OpTbl[$3D] := @OpANDabsX;
   OpTbl[$3E] := @OpROLabsX;
+  OpTbl[$40] := @OpRTI;
   OpTbl[$41] := @OpEORindX;
   OpTbl[$45] := @OpEORzp;
   OpTbl[$46] := @OpLSRzp;
