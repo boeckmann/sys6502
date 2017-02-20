@@ -168,6 +168,7 @@ TCpu6502 = object
   procedure OpPLA;    //< opcode $68 - pull A
   procedure OpADCimm; //< opcode $69 - add imm to accumulator with carry
   procedure OpROR;    //< opcode $6A - rotate right A
+  procedure OpJMPind; //< opcode $6C - jump indirect
   procedure OpADCabs; //< opcode $6D - add abs to accumulator with carry
   procedure OpRORabs; //< opcode $6E - rotate right abs
   procedure OpBVS;    //< opcode $70 - branch if overflow set
@@ -1100,6 +1101,21 @@ begin
   A := AluROR(A);
 end;
 
+procedure TCpu6502.OpJMPind; { opcode $6C - jump indirect }
+var
+  addr: word;
+begin
+  addr := LoadWord(PC);
+  PC := LoadByte(addr);
+
+  if (addr and $FF) = $FF then
+    addr := addr - $FF	 { emulate wrap around }
+  else
+    addr := addr + 1;
+
+  PC := PC or (LoadByte(addr) shl 8);
+end;
+
 procedure TCpu6502.OpADCabs; { opcode $6D }
 var
   m: byte;
@@ -1745,6 +1761,7 @@ begin
   OpTbl[$65] := @OpADCzp;
   OpTbl[$68] := @OpPLA;
   OpTbl[$69] := @OpADCimm;   { add immediate to accumulator with carry }
+  OpTbl[$6C] := @OpJMPind;
   OpTbl[$6D] := @OpADCabs;
   OpTbl[$70] := @OpBVS;      { branch if overflow set }
   OpTbl[$71] := @OpADCindY;
