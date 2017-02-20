@@ -1,0 +1,12 @@
+* = $200
+
+SYSEXIT = $FFFC
+	ldx	#$FF
+	txs			; init stack pointer to $FF
+	jsr	R1		; call service routine
+	jmp	SYSEXIT		; exit program
+
+R1:	lda	#$23		; A <- $23
+	rts			; return from subroutine
+
+
