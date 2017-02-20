@@ -127,11 +127,13 @@ TCpu6502 = object
   procedure OpASLabsX;//< opcode $1E - arithmetic shift left abs,X
   procedure OpJSR;    //< opcode $20 - jump service routine
   procedure OpANDindX;//< opcode $21 - and A with (ind,X)
+  procedure OpBITzp;  //< opcode $24 - test zp bits ans set flags
   procedure OpANDzp;  //< opcode $25 - and A with zp
   procedure OpROLzp;  //< opcode $26 - rotate right zp
   procedure OpPLP;    //< opcode $28 - pull flags
   procedure OpANDimm; //< opcode $29 - and A with imm
   procedure OpROL;    //< opcode $2A - rotate right A
+  procedure OpBITabs; //< opcode $2C - test abs bits ans set flags
   procedure OpANDabs; //< opcode $2D - and A with abs
   procedure OpROLabs; //< opcode $2E - rotate right abs
   procedure OpBMI;    //< opcode $30 - branch on MInus
@@ -809,6 +811,16 @@ begin
   AluAND(LoadIndX);
 end;
 
+procedure TCpu6502.OpBITzp; { opcode $24 }
+var
+  m: byte;
+begin
+  m := LoadZp;
+  FlagZ := m = 0;
+  FlagV := (m and BIT_6) <> 0;
+  FlagS := (m and BIT_7) <> 0;
+end;
+
 procedure TCpu6502.OpANDzp; { opcode $25 }
 begin
   AluAND(LoadZp);
@@ -846,6 +858,16 @@ end;
 procedure TCpu6502.OpROL; { opcode $2A }
 begin
   A := AluROL(A);
+end;
+
+procedure TCpu6502.OpBITabs; { opcode $2C }
+var
+  m: byte;
+begin
+  m := LoadAbs;
+  FlagZ := m = 0;
+  FlagV := (m and BIT_6) <> 0;
+  FlagS := (m and BIT_7) <> 0;
 end;
 
 procedure TCpu6502.OpANDabs; { opcode $2D }
@@ -1685,11 +1707,13 @@ begin
   OpTbl[$1E] := @OpASLabsX;
   OpTbl[$20] := @OpJSR;
   OpTbl[$21] := @OpANDindX;
+  OpTbl[$24] := @OpBITzp;
   OpTbl[$25] := @OpANDzp;
   OpTbl[$26] := @OpROLzp;
   OpTbl[$28] := @OpPLP;
   OpTbl[$29] := @OpANDimm;
   OpTbl[$2A] := @OpROL;
+  OpTbl[$2C] := @OpBITabs;
   OpTbl[$2D] := @OpANDabs;
   OpTbl[$2E] := @OpROLabs;
   OpTbl[$30] := @OpBMI;      { branch if minus }
