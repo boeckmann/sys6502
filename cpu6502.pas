@@ -125,6 +125,7 @@ TCpu6502 = object
   procedure OpORAabsY;//< opcode $19 - bitwise or A with abs,Y
   procedure OpORAabsX;//< opcode $1D - bitwise or A with abs,X
   procedure OpASLabsX;//< opcode $1E - arithmetic shift left abs,X
+  procedure OpJSR;    //< opcode $20 - jump service routine
   procedure OpANDindX;//< opcode $21 - and A with (ind,X)
   procedure OpANDzp;  //< opcode $25 - and A with zp
   procedure OpROLzp;  //< opcode $26 - rotate right zp
@@ -158,6 +159,7 @@ TCpu6502 = object
   procedure OpEORabsY;//< opcode $59 - eor A with abs,Y
   procedure OpEORabsX;//< opcode $5D - eor A with abs,X
   procedure OpLSRabsX;//< opcode $5E - logical shift right abs,X
+  procedure OpRTS;    //< opcode $60 - return from subroutine
   procedure OpADCindX;//< opcode $61 - add (ind,X) to accumulator with carry
   procedure OpADCzp;  //< opcode $65 - add zp to accumulator with carry
   procedure OpRORzp;  //< opcode $66 - rotate right zp
@@ -791,6 +793,17 @@ begin
   StoreByte(addr, tmp);
 end;
 
+procedure TCpu6502.OpJSR; { opcode $20 }
+var
+  addr: word;
+begin
+  addr := LoadWord(PC);
+  PC := PC + 1;
+  PushStack(PC shr 8);
+  PushStack(PC and $FF);
+  PC := addr;
+end;
+
 procedure TCpu6502.OpANDindX; { opcode $21 }
 begin
   AluAND(LoadIndX);
@@ -1009,6 +1022,16 @@ begin
   tmp := LoadAbsXWithAddr(addr);
   tmp := AluLSR(tmp);
   StoreByte(addr, tmp);
+end;
+
+procedure TCpu6502.OpRTS; { opcode $60 }
+var
+  addr: word;
+begin
+  addr := PullStack;
+  addr := addr or (PullStack shl 8);
+  inc(addr);
+  PC := addr;
 end;
 
 procedure TCpu6502.OpADCindX; { opcode $61 }
@@ -1660,6 +1683,7 @@ begin
   OpTbl[$19] := @OpORAabsY;
   OpTbl[$1D] := @OpORAabsX;
   OpTbl[$1E] := @OpASLabsX;
+  OpTbl[$20] := @OpJSR;
   OpTbl[$21] := @OpANDindX;
   OpTbl[$25] := @OpANDzp;
   OpTbl[$26] := @OpROLzp;
@@ -1692,6 +1716,7 @@ begin
   OpTbl[$58] := @OpCLI;      { clear interrupt flag }
   OpTbl[$5D] := @OpEORabsX;
   OpTbl[$5E] := @OpLSRabsX;
+  OpTbl[$60] := @OpRTS;
   OpTbl[$61] := @OpADCindX;
   OpTbl[$65] := @OpADCzp;
   OpTbl[$68] := @OpPLA;
@@ -1786,8 +1811,8 @@ end;
 
 procedure TCpu6502.DumpRegs;
 begin
-  Write(Format('PC=%4.4x  A=%2.2x X=%2.2x Y=%2.2x  ', [PC, A, X, Y]));
-  if FlagS then Write('N') else Write('.');
+  Write(Format('PC=%4.4x  A=%2.2x X=%2.2x Y=%2.2x S=%2.2x ', [PC, A, X, Y, S]));
+  if FlagS then Write('S') else Write('.');
   if FlagV then Write('V') else Write('.');
   if FlagB then Write('B') else Write('.');
   if FlagD then Write('D') else Write('.');
