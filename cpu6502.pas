@@ -28,7 +28,7 @@ TCpu6502 = object
   FlagD: boolean;	//< decimal flag
   FlagB: boolean;	//< break flag
   FlagV: boolean;	//< overflow flag
-  FlagN: boolean;	//< negative (sign) flag
+  FlagS: boolean;	//< negative (sign) flag
 
   { function pointers to external memory interface }
   { }
@@ -664,21 +664,21 @@ procedure TCpu6502.AluUpdateFlags(const op1: byte; const op2: byte; const res: w
 begin
   FlagC := ((res and BIT_8) <> 0);
   FlagZ := ((res and $ff) = 0);
-  FlagN := ((res and BIT_7) <> 0);
+  FlagS := ((res and BIT_7) <> 0);
   FlagV := (((op1 and BIT_7) = (op2 and BIT_7))) and ((op1 and BIT_7) <> (res and BIT_7));
 end;
 
 procedure TCpu6502.AluUpdateNZ(const op: byte);
 begin
   FlagZ := ((op and $ff) = 0);
-  FlagN := ((op and BIT_7) <> 0);
+  FlagS := ((op and BIT_7) <> 0);
 end;
 
 procedure TCpu6502.AluUpdateNZC(const op: byte);
 begin
   FlagC := ((op and BIT_8) <> 0);
   FlagZ := ((op and $ff) = 0);
-  FlagN := ((op and BIT_7) <> 0);
+  FlagS := ((op and BIT_7) <> 0);
 end;
 
 
@@ -709,7 +709,7 @@ var
   tmp: byte;
 begin
   tmp := BtoD(FlagC, $01) or BtoD(FlagZ, $02) or BtoD(FlagI, $04) or BtoD(FlagD, $08) or
-         BtoD(FlagB, $10) or BtoD(FlagV, $40) or BtoD(FlagN, $80);
+         BtoD(FlagB, $10) or BtoD(FlagV, $40) or BtoD(FlagS, $80);
   PushStack(tmp);
 end;
 
@@ -743,7 +743,7 @@ var
   rel: byte;
 begin
   rel := LoadByteIncPC;
-  if not FlagN then PCAddByteSigned(rel);
+  if not FlagS then PCAddByteSigned(rel);
 end;
 
 procedure TCpu6502.OpORAindY; { opcode $11 }
@@ -822,7 +822,7 @@ begin
   FlagD := DtoB(tmp and $08);
   FlagB := DtoB(tmp and $10);
   FlagV := DtoB(tmp and $40);
-  FlagN := DtoB(tmp and $80);
+  FlagS := DtoB(tmp and $80);
 end;
 
 procedure TCpu6502.OpANDimm; { opcode $29 }
@@ -855,7 +855,7 @@ var
   rel: byte;
 begin
   rel := LoadByteIncPC;
-  if FlagN then PCAddByteSigned(rel);
+  if FlagS then PCAddByteSigned(rel);
 end;
 
 procedure TCpu6502.OpANDindY; { opcode $31 }
@@ -1787,7 +1787,7 @@ end;
 procedure TCpu6502.DumpRegs;
 begin
   Write(Format('PC=%4.4x  A=%2.2x X=%2.2x Y=%2.2x  ', [PC, A, X, Y]));
-  if FlagN then Write('N') else Write('.');
+  if FlagS then Write('N') else Write('.');
   if FlagV then Write('V') else Write('.');
   if FlagB then Write('B') else Write('.');
   if FlagD then Write('D') else Write('.');
