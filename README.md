@@ -2,19 +2,22 @@ SYS6502 - a minimal MOS6502 simulator
 =====================================
 
 
-## Description
-SYS6502 is a MOS6502 simulator written in FreePascal. It consists of a
-command line simulator interface to load and run programs and to inspect
-the state of the simulator, especially the CPU and RAM.
+## Introduction
+SYS6502 is a high level MOS6502 simulator written in FreePascal. It consists of
+a command line simulator interface to load and run programs and to inspect
+the state of the simulator, especially the CPU and RAM. The CPU simulation
+currently supports all documented 6502 opcodes.
 
-### Compiling the simulator
+It is NOT a timing accurate CPU simulation capable of emulating real 8-bit
+systems. There is currently no way to trigger external interrupts or NMIs, but
+the BRK instruction may be used.
+
+## Compiling the simulator
 If FreePascal is installed the simulator can be compiled by simply running
 
 	fpc sys6502
 
-### The virtual machine
-The CPU simulation currently supports all documented 6502 opcodes.
-
+## The virtual machine
 The virtual 6502 machine consists of 64k RAM ($0000-$FFFF). Programs to
 be executed are expected to be loaded at address $0200, directly following
 the stack memory ($0100-$01FF). The 6502 reset vector located at $FFFC is set
@@ -27,8 +30,7 @@ jump to the reset vector $FFFC:
 
 The simulator currently can load and execute plain binary files as programs.
 
-
-### Using the simulator
+## Using the simulator
 After starting the simulator the user is presented a command line displaying
 the current program counter (PC):
 
