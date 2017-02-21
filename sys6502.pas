@@ -16,6 +16,14 @@ var
   terminating: boolean;
 
 
+procedure SysChrout(cpu: PCpu6502);
+begin
+  with cpu^ do begin
+    Write(Chr(A)); Flush(Stdout);
+    OpRTS;
+  end;
+end;
+
 procedure StoreMem(const addr: word; const m: byte);
 begin
   mem[addr] := m;
@@ -224,7 +232,11 @@ begin
   mem[$FFFE] := $FC;                // set interrupt vector to terminate addr
   mem[$FFFF] := $FF;
 
+  mem[$01FE] := $FC;                // init end of  stk end with terminate addr
+  mem[$01FF] := $FF;
+
   cpu.Init(@LoadMem, @StoreMem);
+  cpu.InstallBuiltinProc($FFD2, @SysChrout);
 end;
 
 begin

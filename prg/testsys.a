@@ -1,0 +1,14 @@
+* = $0200
+
+CHROUT = $FFD2
+
+	LDX	#0
+loop	LDA	str1,X
+	BEQ	exit
+	JSR	CHROUT
+	INX
+	JMP	loop
+exit	RTS
+
+str1	!text "Hello, World", 13, 10, 0
+
