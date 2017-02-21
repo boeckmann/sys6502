@@ -9,8 +9,11 @@ interface
 
 type
 
+PCpu6502 = ^TCpu6502;
+
 TLoadFunc = function(const addr: word) : byte;
 TStoreProc = procedure(const addr: word; const m: byte);
+TBuiltinProc = procedure(cpu: PCpu6502);
 
 TCpu6502 = object
   { cpu registers }
@@ -35,17 +38,24 @@ TCpu6502 = object
   StoreByte: TStoreProc;	//< store byte to external memory
 
   { opcode function dispatch table }
-  OpTbl: array[0..255] of procedure of object;
+  OpTbl: array[0..$FF] of procedure of object;
+  
+  { function call table - determines what happens if CPU executes mem[PC]   }
+  {   if FuncTbl[PC] is nil simulator continues executing 6502 instructions }
+  {   if FuncTbl[PC] <> nil then the given function is called               }
+  FuncTbl: array[0..$FFFF] of TBuiltinProc;
 
   constructor Init(const load: TLoadFunc; const store: TStoreProc);
   procedure ResetCPU;
+  procedure InstallBuiltinProc(const addr: word; func: TBuiltinProc);
 
+  
   { fetch and execute next instruction }
-  procedure ExecuteNext;
+  procedure ExecuteNext; inline;
   { fetch and execute next instruction end dexplay cpu status }
   procedure ExecuteTo(pcBreak: word);
   procedure ExecuteToWithDump(pcBreak: word);
-
+  
   { flag functions }
   { }
   function FlagsToByte : byte; inline;
@@ -110,6 +120,8 @@ TCpu6502 = object
   { }
   procedure PushStack(v: byte); inline;
   function PullStack : byte; inline;
+
+  procedure InitFuncTbl;
 
   { opcode execution routines }
   { }
@@ -298,6 +310,8 @@ begin
   StoreByte := store;
 
   InitOpTbl;
+  InitFuncTbl;
+  ResetCPU;
 end;
 
 procedure TCpu6502.ResetCPU;
@@ -308,33 +322,36 @@ begin
   FlagI := true;
 end;
 
+procedure TCpu6502.InstallBuiltinProc(const addr: word; func: TBuiltinProc);
+begin
+  FuncTbl[addr] := func;
+end;
+
+
 {--- high level execution routines  ------------------------------------------}
 
 procedure TCpu6502.ExecuteNext;
 var
   opcode: byte;
 begin
-  opcode := LoadByteIncPC;
-  OpTbl[opcode]();
+  if FuncTbl[PC] = nil then begin
+    opcode := LoadByteIncPC;
+    OpTbl[opcode]();
+  end else
+    FuncTbl[PC](@self);
 end;
 
 procedure TCpu6502.ExecuteTo(pcBreak: word);
-var
-  opcode: byte;
 begin
   while PC <> pcBreak do begin
-    opcode := LoadByteIncPC;
-    OpTbl[opcode]();
+    ExecuteNext;
   end;
 end;
 
 procedure TCpu6502.ExecuteToWithDump(pcBreak: word);
-var
-  opcode: byte;
 begin
   while PC <> pcBreak do begin
-    opcode := LoadByteIncPC;
-    OpTbl[opcode]();
+    ExecuteNext;
     DumpRegs;
   end;
 end;
@@ -1732,6 +1749,14 @@ begin
   StoreByte(addr, tmp);
 end;
 
+
+procedure TCpu6502.InitFuncTbl;
+var
+  i: integer;
+begin
+  for i := low(FuncTbl) to high(FuncTbl) do
+    FuncTbl[i] := nil;
+end;
 
 procedure TCpu6502.InitOpTbl;
 var

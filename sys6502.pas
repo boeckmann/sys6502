@@ -225,7 +225,6 @@ begin
   mem[$FFFF] := $FF;
 
   cpu.Init(@LoadMem, @StoreMem);
-  cpu.ResetCPU;
 end;
 
 begin
@@ -236,12 +235,5 @@ begin
     command := ReadCommand;
     InterpretCommand(command);
   end;
-
-  // LoadPrgAt($0200, zpTest, length(zpTest));
-  //cpu.PC := $0200;
-
-  //cpu.DumpRegs;
-  //cpu.ExecuteToWithDump($03fd);
-  //DumpMem(0);
 end.
 
