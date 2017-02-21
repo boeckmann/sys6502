@@ -112,7 +112,7 @@ greeting message.
     23  0220 9d4a02                     STA     name,X
     24                          
     25                          
-    26                                  ; echo prompt
+    26                                  ; display greeting
     27  0223 aa                         TAX
     28  0224 bd4302             -       LDA     greet,X
     29  0227 f007                       BEQ     exit
