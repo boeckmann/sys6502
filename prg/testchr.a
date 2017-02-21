@@ -1,0 +1,40 @@
+* = $0200
+
+CHRIN = $FFCF
+CHROUT = $FFD2
+
+	; echo prompt
+	LDX	#0
+-	LDA	prompt,X
+	BEQ	input
+	JSR	CHROUT
+	INX
+	JMP	-
+
+	; read name from input
+input	LDX	#0
+-	JSR	CHRIN
+	STA	name,X
+	INX
+	CMP	#$0A
+	BEQ	+
+	JMP	-
++	LDA	#0
+	STA	name,X
+
+
+	; echo greeting
+	TAX
+-	LDA	greet,X
+	BEQ	exit
+	JSR	CHROUT
+	INX
+	JMP	-
+
+	; return to OS
+exit	RTS
+
+
+prompt:	!text "Enter your name: ", 0
+greet:	!text "Hello, "
+name:

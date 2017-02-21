@@ -15,6 +15,25 @@ var
   command: string;
   terminating: boolean;
 
+  keyBuf: string[88] = '';
+  keyPtr: integer = 1;
+
+procedure SysChrin(cpu: PCpu6502);
+begin
+  if keyPtr > Length(keyBuf) then begin
+    ReadLn(keyBuf);
+    SetLength(keyBuf, Length(keyBuf) + 1);
+    keyBuf[Length(keyBuf)] := chr($0A);
+    keyPtr := 1;
+  end;
+
+  with cpu^ do begin
+    A := Ord(keyBuf[keyPtr]);
+    OpRTS;
+  end;
+
+  inc(keyPtr);
+end;
 
 procedure SysChrout(cpu: PCpu6502);
 begin
@@ -236,6 +255,7 @@ begin
   mem[$01FF] := $FF;
 
   cpu.Init(@LoadMem, @StoreMem);
+  cpu.InstallBuiltinProc($FFCF, @SysChrin);
   cpu.InstallBuiltinProc($FFD2, @SysChrout);
 end;
 
