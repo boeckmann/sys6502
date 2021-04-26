@@ -114,13 +114,18 @@ begin
   WriteLn('   s : execute next instruction');
 end;
 
+function MinWord(const a, b: word) : word;
+begin
+  if b < a then MinWord := b else MinWord := a;
+end;
+
 procedure DoMemdump(const start: word; const len: word);
 var
   f, t, i: word;
 begin
   f := start;
   while (f <= start + len - 1) and (f >= start) do begin
-    t := min(f+15, start+len-1);
+    t := MinWord(f+15, start+len-1);
 
     Write(IntToHex(f, 4));
     Write(': ');

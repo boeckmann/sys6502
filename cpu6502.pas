@@ -1,9 +1,8 @@
 unit cpu6502;
 
-{$MODE objfpc}{$H+}
+{$MODE objfpc}{$H+}{$J-}
 
 {$OVERFLOWCHECKS off}   // some code depends on value wrap around
-{$RANGECHECKS off}      // also disable rangechecks for speed
 
 interface
 
@@ -51,75 +50,75 @@ TCpu6502 = object
 
   
   { fetch and execute next instruction }
-  procedure ExecuteNext; inline;
+  procedure ExecuteNext;
   { fetch and execute next instruction end dexplay cpu status }
   procedure ExecuteTo(pcBreak: word);
   procedure ExecuteToWithDump(pcBreak: word);
   
   { flag functions }
   { }
-  function FlagsToByte : byte; inline;
-  procedure ByteToFlags(const b: byte); inline;
+  function FlagsToByte : byte;
+  procedure ByteToFlags(const b: byte);
 
 
   { fetch next byte from PC address and increment PC by 1 }
-  function LoadByteIncPC : byte; inline;
+  function LoadByteIncPC : byte;
   { fetch next word from PC address and increment PC by 2 }
-  function LoadWord(const addr: word) : word; inline;
-  function LoadWordIncPC : word; inline;
+  function LoadWord(const addr: word) : word;
+  function LoadWordIncPC : word;
 
   { add a signed byte to current PC }
   procedure PCAddByteSigned(const addr: byte);
 
   { addressing functions }
   { }
-  function LoadImm : byte; inline;
-  function LoadZp : byte; inline;
-  function LoadZpWithAddr(out addr: word) : byte; inline;
-  procedure StoreZp(m: byte); inline;
-  function LoadZpX : byte; inline;
-  function LoadZpXWithAddr(out addr: word) : byte; inline;
+  function LoadImm : byte;
+  function LoadZp : byte;
+  function LoadZpWithAddr(out addr: word) : byte;
+  procedure StoreZp(m: byte);
+  function LoadZpX : byte;
+  function LoadZpXWithAddr(out addr: word) : byte;
   procedure StoreZpX(const m: byte);
-  function LoadZpY : byte; inline;
+  function LoadZpY : byte;
   procedure StoreZpY(const m: byte);
-  function LoadAbs : byte; inline;
-  function LoadAbsWithAddr(out addr: word) : byte; inline;
-  procedure StoreAbs(const m: byte); inline;
-  function LoadAbsX : byte; inline;
-  function LoadAbsXWithAddr(out addr: word) : byte; inline;
-  procedure StoreAbsX(const m: byte); inline;
-  function LoadAbsY : byte; inline;
-  procedure StoreAbsY(const m: byte); inline;
-  function LoadIndX : byte; inline;
-  procedure StoreIndX(const m: byte); inline;
-  function LoadIndY : byte; inline;
-  procedure StoreIndY(const m: byte); inline;
+  function LoadAbs : byte;
+  function LoadAbsWithAddr(out addr: word) : byte;
+  procedure StoreAbs(const m: byte);
+  function LoadAbsX : byte;
+  function LoadAbsXWithAddr(out addr: word) : byte;
+  procedure StoreAbsX(const m: byte);
+  function LoadAbsY : byte;
+  procedure StoreAbsY(const m: byte);
+  function LoadIndX : byte;
+  procedure StoreIndX(const m: byte);
+  function LoadIndY : byte;
+  procedure StoreIndY(const m: byte);
 
   { ALU routines }
   { }
-  procedure AluADC(const m: byte); inline;
-  procedure AluSBC(const m: byte); inline;
-  procedure AluAND(const m: byte); inline;
-  procedure AluORA(const m: byte); inline;
-  procedure AluEOR(const m: byte); inline;
-  procedure AluCMP(const m: byte); inline;
-  procedure AluCPX(const m: byte); inline;
-  procedure AluCPY(const m: byte); inline;
-  function AluINC(const m: byte) : byte; inline;
-  function AluDEC(const m: byte) : byte; inline;
-  function AluASL(const m: byte) : byte; inline;
-  function AluLSR(const m: byte) : byte; inline;
-  function AluROL(const m: byte) : byte; inline;
-  function AluROR(const m: byte) : byte; inline;
+  procedure AluADC(const m: byte);
+  procedure AluSBC(const m: byte);
+  procedure AluAND(const m: byte);
+  procedure AluORA(const m: byte);
+  procedure AluEOR(const m: byte);
+  procedure AluCMP(const m: byte);
+  procedure AluCPX(const m: byte);
+  procedure AluCPY(const m: byte);
+  function AluINC(const m: byte) : byte;
+  function AluDEC(const m: byte) : byte;
+  function AluASL(const m: byte) : byte;
+  function AluLSR(const m: byte) : byte;
+  function AluROL(const m: byte) : byte;
+  function AluROR(const m: byte) : byte;
 
-  procedure AluUpdateFlags(const op1: byte; const op2: byte; const res: word); inline;
-  procedure AluUpdateNZ(const op: byte); inline;
-  procedure AluUpdateNZC(const op: byte); inline;
+  procedure AluUpdateFlags(const op1: byte; const op2: byte; const res: word);
+  procedure AluUpdateNZ(const op: byte);
+  procedure AluUpdateNZC(const op: byte);
 
   { stack routines }
   { }
-  procedure PushStack(v: byte); inline;
-  function PullStack : byte; inline;
+  procedure PushStack(v: byte);
+  function PullStack : byte;
 
   procedure InitFuncTbl;
 
@@ -294,12 +293,12 @@ const
   BIT_8 = $100;
 
 
-function BtoD(const b: boolean; const v: byte) : byte; inline;
+function BtoD(const b: boolean; const v: byte) : byte;
 begin
   if b then BtoD := v else BtoD := 0;
 end;
 
-function DtoB(const v: byte) : boolean; inline;
+function DtoB(const v: byte) : boolean;
 begin
   DToB := v <> 0;
 end;
@@ -395,20 +394,16 @@ end;
 
 { load word from PC abs, PC <- PC + 2 }
 function TCpu6502.LoadWordIncPC : word;
-var
-  tmp: word;
 begin
-  tmp := LoadWord(PC);
+  LoadWordIncPC := LoadWord(PC);
   PC := PC + 2;
-  LoadWordIncPC := tmp;
 end;
 
 { addressing modes implementation }
 
 function TCpu6502.LoadImm : byte;
 begin
-  LoadImm := LoadByte(PC);
-  inc(PC);
+  LoadImm := LoadByteIncPC;
 end;
 
 function TCpu6502.LoadZp : byte;
@@ -425,7 +420,7 @@ begin
   LoadZPWithAddr := LoadByte(addr);
 end;
 
-procedure TCpu6502.StoreZp(m: byte); inline;
+procedure TCpu6502.StoreZp(m: byte);
 var
   addr: word;
 begin
@@ -617,18 +612,18 @@ begin
   AluUpdateFlags(oldA, m, tmp);
 end;
 
-procedure TCpu6502.AluSBC(const m: byte); inline;
+procedure TCpu6502.AluSBC(const m: byte);
 begin
   AluADC(m xor $ff);
 end;
 
-procedure TCpu6502.AluAND(const m: byte); inline;
+procedure TCpu6502.AluAND(const m: byte);
 begin
   A := A and m;
   AluUpdateNZ(A);
 end;
 
-procedure TCpu6502.AluORA(const m: byte); inline;
+procedure TCpu6502.AluORA(const m: byte);
 begin
   A := A and m;
   AluUpdateNZ(A);
@@ -737,15 +732,12 @@ end;
 {--- opcode implementation ---------------------------------------------------}
 
 procedure TCpu6502.OpBRK; { opcode $00 }
-var
-  addr: word;
 begin
-  addr := LoadWord($FFFE);
   PC := PC + 1;
   PushStack(PC shr 8);
   PushStack(PC and $FF);
   PushStack(FlagsToByte or BIT_4 or BIT_5);
-  PC := addr;
+  PC := LoadWord($FFFE);
 end;
 
 procedure TCpu6502.OpORAindX; { opcode $01 }

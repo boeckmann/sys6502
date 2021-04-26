@@ -10,3 +10,6 @@ sys6502
 
 # VIM files
 *.swp
+
+# Mac garbage
+.DS_Store
