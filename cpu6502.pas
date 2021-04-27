@@ -1,3 +1,8 @@
+// SYS6502 - A MOS Technology MCS6502 emulator
+// Copyright (C) 2020-2021 Bernd Böckmann
+//
+// Distributed under zlib license. Please see LICENSE file.
+
 unit cpu6502;
 
 {$MODE objfpc}{$H+}{$J-}

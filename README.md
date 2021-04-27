@@ -3,10 +3,15 @@ SYS6502 - a minimal MOS6502 simulator
 
 
 ## Introduction
-SYS6502 is a high level MOS6502 simulator written in FreePascal. It consists of
-a command line simulator interface to load and run programs and to inspect
-the state of the simulator, especially the CPU and RAM. The CPU simulation
-currently supports all documented 6502 opcodes.
+SYS6502 is a high level MOS6502 simulator. It consists of two modules, a
+6502 CPU core (CPU6502) emulation and a minimal system interface (SYS6502)
+to interact with the CPU core.
+
+The CPU6502 core is implemented as a Pascal unit witch can be embedded in
+other projects. The SYS6502 interface consists of a command line interface
+to load and run programs and to inspect the state of the simulator, especially
+the CPU and RAM. The CPU simulation currently supports all documented
+6502 opcodes.
 
 It is NOT a timing accurate CPU simulation capable of emulating real 8-bit
 systems. There is currently no way to trigger external interrupts or NMIs, but
