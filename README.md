@@ -4,10 +4,10 @@ SYS6502 - a minimal MOS6502 simulator
 
 ## Introduction
 SYS6502 is a high level MOS6502 simulator. It consists of two modules, a
-6502 CPU core (CPU6502) emulation and a minimal system interface (SYS6502)
+6502 CPU core emulation (CPU6502) and a minimal system interface (SYS6502)
 to interact with the CPU core.
 
-The CPU6502 core is implemented as a Pascal unit witch can be embedded in
+The CPU6502 core is implemented as a Pascal unit which can be embedded in
 other projects. The SYS6502 interface consists of a command line interface
 to load and run programs and to inspect the state of the simulator, especially
 the CPU and RAM. The CPU simulation currently supports all documented
