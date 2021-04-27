@@ -1,18 +1,15 @@
-SYS6502 - a minimal MOS6502 simulator
+SYS6502 - a minimal MCS6502 simulator
 =====================================
 
 
 ## Introduction
-SYS6502 is a high level MOS6502 simulator. It consists of two modules, a
-6502 CPU core emulation (CPU6502) and a minimal system interface (SYS6502)
-to interact with the CPU core.
+SYS6502 is a high level MCS6502 simulator. It consists of two modules: CPU6502,
+an embeddable CPU core implemented as Pascal unit and SYS6502, a minimal
+system / virtual machine to interact with the CPU core. It consists of a command
+line interface to load and run programs and to inspect the state of the
+simulator, especially the CPU and RAM.
 
-The CPU6502 core is implemented as a Pascal unit which can be embedded in
-other projects. The SYS6502 interface consists of a command line interface
-to load and run programs and to inspect the state of the simulator, especially
-the CPU and RAM. The CPU simulation currently supports all documented
-6502 opcodes.
-
+The CPU simulation currently supports all documented 6502 opcodes.
 It is NOT a timing accurate CPU simulation capable of emulating real 8-bit
 systems. There is currently no way to trigger external interrupts or NMIs, but
 the BRK instruction may be used.
@@ -22,8 +19,53 @@ If FreePascal is installed the simulator can be compiled by simply running
 
 	fpc sys6502
 
-## The virtual machine
-The virtual 6502 machine consists of 64k RAM ($0000-$FFFF). Programs to
+## Embedding the CPU6502 core
+The CPU core requires two external routines which implement memory access
+(reads and writes). The routine types are
+
+    TLoadFunc = function(const addr: word) : byte;
+    TStoreProc = procedure(const addr: word; const m: byte);
+
+The CPU of type `TCpu6502` must be initialized by the `Init` method which
+requires as arguments pointers to the memory access routines:
+
+    var
+      cpu: TCpu6502;
+    begin
+      cpu.Init(@LoadMem, @StoreMem);
+    end;
+
+To emulate 6502 operating system kernel features one can register builtin
+subroutines written in Pascal. The declaration of the register function is
+
+    procedure TCpu6502.InstallBuiltinProc(const addr: word; func: TBuiltinProc);
+
+and
+
+    TBuiltinProc = procedure(cpu: PCpu6502);
+
+Once the program counter of CPU6502 reaches an address corresponding to a
+registered builtin function, that function gets called instead of
+executing the 6502 instruction stored at the given memory location.
+
+The following example registeres a character output routine. Note that the
+routine is expected to be called via a JSR (call subroutine) instruction and
+therefore a RTS (return from subroutine) instruction is executed as last
+statement of the SysChrout routine.
+
+    procedure SysChrout(cpu: PCpu6502);
+    begin
+      Write(Chr(cpu^.A)); Flush(Stdout);
+      cpu^.OpRTS;
+    end;
+
+In the following example the routine is installed to memory location $FFD2,
+in accordance to the C64 CHROUT KERNAL routine.
+
+    cpu.InstallBuiltinProc($FFD2, @SysChrout);
+
+## The SYS6502 simulator / virtual machine
+The SYS6502 virtual 6502 machine consists of 64k RAM ($0000-$FFFF). Programs to
 be executed are expected to be loaded at address $0200, directly following
 the stack memory ($0100-$01FF). The 6502 reset vector located at $FFFC is set
 to $0200 upon reset.
