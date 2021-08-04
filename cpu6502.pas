@@ -35,7 +35,7 @@ TCpu6502 = object
   FlagI: boolean;	//< interrupt disable flag
   FlagD: boolean;	//< decimal flag
   FlagV: boolean;	//< overflow flag
-  FlagS: boolean;	//< negative (sign) flag
+  FlagN: boolean;	//< negative (sign) flag
 
   { function pointers to external memory interface }
   { }
@@ -367,7 +367,7 @@ end;
 function TCpu6502.FlagsToByte : byte;
 begin
   FlagsToByte := BtoD(FlagC, $01) or BtoD(FlagZ, $02) or BtoD(FlagI, $04) or
-                 BtoD(FlagD, $08) or BtoD(FlagV, $40) or BtoD(FlagS, $80);
+                 BtoD(FlagD, $08) or BtoD(FlagV, $40) or BtoD(FlagN, $80);
 end;
 
 procedure TCpu6502.ByteToFlags(const b: byte);
@@ -377,7 +377,7 @@ begin
   FlagI := DtoB(b and $04);
   FlagD := DtoB(b and $08);
   FlagV := DtoB(b and $40);
-  FlagS := DtoB(b and $80);
+  FlagN := DtoB(b and $80);
 end;
 
 
@@ -696,9 +696,9 @@ var
   tmpC: boolean;
 begin
   tmpC := FlagC;
-  FlagC := (m and 1) <> 0;
+  FlagC := (m and BIT_7) <> 0;
   AluROL := (m shl 1);
-  if tmpC then AluROL := AluROL or $F0;
+  if tmpC then AluROL := AluROL or BIT_0;
   AluUpdateNZ(AluROL);
 end;
 
@@ -707,9 +707,9 @@ var
   tmpC: boolean;
 begin
   tmpC := FlagC;
-  FlagC := (m and $F0) <> 0;
+  FlagC := (m and BIT_0) <> 0;
   AluROR := (m shr 1);
-  if tmpC then AluROR := AluROR or 1;
+  if tmpC then AluROR := AluROR or BIT_7;
   AluUpdateNZ(AluROR);
 end;
 
@@ -717,21 +717,21 @@ procedure TCpu6502.AluUpdateFlags(const op1: byte; const op2: byte; const res: w
 begin
   FlagC := ((res and BIT_8) <> 0);
   FlagZ := ((res and $ff) = 0);
-  FlagS := ((res and BIT_7) <> 0);
+  FlagN := ((res and BIT_7) <> 0);
   FlagV := (((op1 and BIT_7) = (op2 and BIT_7))) and ((op1 and BIT_7) <> (res and BIT_7));
 end;
 
 procedure TCpu6502.AluUpdateNZ(const op: byte);
 begin
   FlagZ := ((op and $ff) = 0);
-  FlagS := ((op and BIT_7) <> 0);
+  FlagN := ((op and BIT_7) <> 0);
 end;
 
 procedure TCpu6502.AluUpdateNZC(const op: byte);
 begin
   FlagC := ((op and BIT_8) <> 0);
   FlagZ := ((op and $ff) = 0);
-  FlagS := ((op and BIT_7) <> 0);
+  FlagN := ((op and BIT_7) <> 0);
 end;
 
 
@@ -801,7 +801,7 @@ var
   rel: byte;
 begin
   rel := LoadByteIncPC;
-  if not FlagS then PCAddByteSigned(rel);
+  if not FlagN then PCAddByteSigned(rel);
 end;
 
 procedure TCpu6502.OpORAindY; { opcode $11 }
@@ -872,7 +872,7 @@ begin
   m := LoadZp;
   FlagZ := m = 0;
   FlagV := (m and BIT_6) <> 0;
-  FlagS := (m and BIT_7) <> 0;
+  FlagN := (m and BIT_7) <> 0;
 end;
 
 procedure TCpu6502.OpANDzp; { opcode $25 }
@@ -912,7 +912,7 @@ begin
   m := LoadAbs;
   FlagZ := m = 0;
   FlagV := (m and BIT_6) <> 0;
-  FlagS := (m and BIT_7) <> 0;
+  FlagN := (m and BIT_7) <> 0;
 end;
 
 procedure TCpu6502.OpANDabs; { opcode $2D }
@@ -935,7 +935,7 @@ var
   rel: byte;
 begin
   rel := LoadByteIncPC;
-  if FlagS then PCAddByteSigned(rel);
+  if FlagN then PCAddByteSigned(rel);
 end;
 
 procedure TCpu6502.OpANDindY; { opcode $31 }
@@ -1820,16 +1820,21 @@ begin
   OpTbl[$60] := @OpRTS;
   OpTbl[$61] := @OpADCindX;
   OpTbl[$65] := @OpADCzp;
+  OpTbl[$66] := @OpRORzp;
   OpTbl[$68] := @OpPLA;
   OpTbl[$69] := @OpADCimm;   { add immediate to accumulator with carry }
+  OpTbl[$6A] := @OpROR;
   OpTbl[$6C] := @OpJMPind;
   OpTbl[$6D] := @OpADCabs;
+  OpTbl[$6E] := @OpRORabs;
   OpTbl[$70] := @OpBVS;      { branch if overflow set }
   OpTbl[$71] := @OpADCindY;
   OpTbl[$75] := @OpADCzpX;
+  OpTbl[$76] := @OpRORzpX;
   OpTbl[$78] := @OpSEI;      { set interrupt flag }
   OpTbl[$79] := @OpADCabsY;
   OpTbl[$7D] := @OpADCabsX;
+  OpTbl[$7E] := @OpRORabsX;
   OpTbl[$81] := @OpSTAindX;
   OpTbl[$84] := @OpSTYzp;
   OpTbl[$85] := @OpSTAzp;
@@ -1914,7 +1919,7 @@ end;
 procedure TCpu6502.DumpRegs;
 begin
   Write(Format('PC=%4.4x  A=%2.2x X=%2.2x Y=%2.2x S=%2.2x ', [PC, A, X, Y, S]));
-  if FlagS then Write('S') else Write('.');
+  if FlagN then Write('N') else Write('.');
   if FlagV then Write('V') else Write('.');
   if FlagD then Write('D') else Write('.');
   if FlagI then Write('I') else Write('.');
