@@ -1,7 +1,7 @@
 { SYS6502 - A MOS Technology MCS6502 emulator
   Copyright (C) 2020-2021 Bernd Böckmann
 
-  Distributed under zlib license. Please see LICENSE file.
+  Distributed under MIT license. Please see LICENSE file.
 }
 
 program sys6502;
