@@ -78,11 +78,12 @@ jump to the reset vector $FFFC:
 The simulator currently can load and execute plain binary files as programs.
 
 ## Using the simulator
-A 6502 program can be started from command line. It is loaded to address
-$0200 and executed. Alternatively the simulator may be started in interactive
-mode.
-Then, after starting the simulator the user is presented a command line displaying
-the current program counter (PC):
+A 6502 program can be started from command line by giving it as command line
+argument to the simulator. The program is loaded at address $0200 and executed.
+
+Alternatively the simulator may be started in interactive mode by not entering
+any command line arguments. Then, after starting the simulator,
+the user is greeted by command prompt displaying the current program counter (PC):
 
 	PC=0200>
 
@@ -135,48 +136,52 @@ To output the value of the Accumulator as a character to stdout one can write
     JSR $FFD2
 
 The following complete sample program reads a name from input and displays a
-greeting message.
+greeting message. It may be assembled with my
+[ASM6502 assembler](https://github.com/boeckmann/asm6502).
 
-     1                          * = $0200
-     2                          
-     3                          CHRIN = $FFCF
-     4                          CHROUT = $FFD2
-     5                          
-     6                                  ; echo prompt
-     7  0200 a200                       LDX     #0
-     8  0202 bd3102             -       LDA     prompt,X
-     9  0205 f007                       BEQ     input
-    10  0207 20d2ff                     JSR     CHROUT
-    11  020a e8                         INX
-    12  020b 4c0202                     JMP     -
-    13                          
-    14                                  ; read name from input
-    15  020e a200               input   LDX     #0
-    16  0210 20cfff             -       JSR     CHRIN
-    17  0213 9d4a02                     STA     name,X
-    18  0216 e8                         INX
-    19  0217 c90a                       CMP     #$0A
-    20  0219 f003                       BEQ     +
-    21  021b 4c1002                     JMP     -
-    22  021e a900               +       LDA     #0
-    23  0220 9d4a02                     STA     name,X
-    24                          
-    25                          
-    26                                  ; display greeting
-    27  0223 aa                         TAX
-    28  0224 bd4302             -       LDA     greet,X
-    29  0227 f007                       BEQ     exit
-    30  0229 20d2ff                     JSR     CHROUT
-    31  022c e8                         INX
-    32  022d 4c2402                     JMP     -
-    33                          
-    34                                  ; return to OS
-    35  0230 60                 exit    RTS
-    36                          
-    37                          
-    38  0231 456e74657220796f...prompt: !text "Enter your name: ", 0
-    39  0243 48656c6c6f2c20     greet:  !text "Hello, "
-    40                          name:
+	; Hello world example for sys6502 emulator
+
+	.ORG $0200
+
+	CHRIN = $FFCF
+	CHROUT = $FFD2
+
+	start:
+		; echo prompt
+		LDX	#0
+	@l	LDA	prompt,X
+		BEQ	input
+		JSR	CHROUT
+		INX
+		JMP	@l
+
+		; read name from input
+	input	LDX	#0
+	@l1	JSR	CHRIN
+		STA	name,X
+		INX
+		CMP	#$0A
+		BEQ	@l2
+		JMP	@l1
+	@l2	LDA	#0
+		STA	name,X
+
+
+		; echo greeting
+	output	TAX
+	@l	LDA	greet,X
+		BEQ	exit
+		JSR	CHROUT
+		INX
+		JMP	@l
+
+		; return to OS
+	exit	RTS
+
+
+	prompt:	.byte "Enter your name: ", 0
+	greet:	.byte "Hello, "
+	name:
 
 It follows the output of the simulator session:
 
