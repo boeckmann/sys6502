@@ -23,6 +23,7 @@ var
 
   keyBuf: string[88] = '';
   keyPtr: integer = 1;
+  verbose: boolean = false;
 
 procedure SysChrin(cpu: PCpu6502);
 begin
@@ -69,7 +70,7 @@ end;
 
 procedure ShowVerbose(const s: string);
 begin
-  WriteLn(s);
+  if Verbose then WriteLn(s);
 end;
 
 procedure ShowError(const err: string);
@@ -273,10 +274,17 @@ end;
 begin
   InitSystem;
 
-  terminating := false;
-  while not terminating do begin
-    command := ReadCommand;
-    InterpretCommand(command);
-  end;
+  if ParamCount = 0 then begin
+    verbose := true;
+    terminating := false;
+    while not terminating do begin
+      command := ReadCommand;
+      InterpretCommand(command);
+    end;
+  end
+  else begin
+    DoLoad(ParamStr(1), $200);
+    DoRun;
+  end
 end.
 
