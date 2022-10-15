@@ -75,6 +75,10 @@ jump to the reset vector $FFFC:
 
 	JMP	$FFFC	; terminates the program
 
+Alternatively the program may be terminated by a RTS instruction, because
+at program start the stack contains the termination address $FFFC as its
+only element.
+
 The simulator currently can load and execute plain binary files as programs.
 
 ## Using the simulator
