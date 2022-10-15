@@ -78,7 +78,10 @@ jump to the reset vector $FFFC:
 The simulator currently can load and execute plain binary files as programs.
 
 ## Using the simulator
-After starting the simulator the user is presented a command line displaying
+A 6502 program can be started from command line. It is loaded to address
+$0200 and executed. Alternatively the simulator may be started in interactive
+mode.
+Then, after starting the simulator the user is presented a command line displaying
 the current program counter (PC):
 
 	PC=0200>
