@@ -37,6 +37,8 @@ TCpu6502 = object
   FlagV: boolean;	//< overflow flag
   FlagN: boolean;	//< negative (sign) flag
 
+  BrkAddr: word; //< address of last triggered brk instruction
+
   { function pointers to external memory interface }
   { }
   LoadByte: TLoadFunc;		//< load byte from external memory
@@ -56,9 +58,9 @@ TCpu6502 = object
 
   
   { fetch and execute next instruction }
-  procedure ExecuteNext;
+  function ExecuteNext : boolean;
   { fetch and execute next instruction end dexplay cpu status }
-  procedure ExecuteTo(pcBreak: word);
+  function ExecuteTo(pcLast: word; stopOnBrk: boolean) : boolean;
   procedure ExecuteToWithDump(pcBreak: word);
   
   { flag functions }
@@ -335,21 +337,34 @@ end;
 
 {--- high level execution routines  ------------------------------------------}
 
-procedure TCpu6502.ExecuteNext;
+function TCpu6502.ExecuteNext : boolean;
 var
   opcode: byte;
 begin
   if FuncTbl[PC] = nil then begin
     opcode := LoadByteIncPC;
     OpTbl[opcode]();
-  end else
+    ExecuteNext := opcode <> $00;
+  end else begin
     FuncTbl[PC](@self);
+    ExecuteNext := true;
+  end;
 end;
 
-procedure TCpu6502.ExecuteTo(pcBreak: word);
+function TCpu6502.ExecuteTo(pcLast: word; stopOnBrk: boolean) : boolean;
+var opcode: byte;
 begin
-  while PC <> pcBreak do begin
-    ExecuteNext;
+  ExecuteTo := false;
+  while PC <> pcLast do begin
+    if FuncTbl[PC] = nil then begin
+      opcode := LoadByteIncPC;
+      OpTbl[opcode]();
+      ExecuteTo := (PC = pcLast) or (opcode <> $00);
+      if opcode = $00 then break;
+    end else begin
+      FuncTbl[PC](@self);
+      ExecuteTo := true;
+    end;
   end;
 end;
 
@@ -739,6 +754,7 @@ end;
 
 procedure TCpu6502.OpBRK; { opcode $00 }
 begin
+  BrkAddr := PC - 1;
   PC := PC + 1;
   PushStack(PC shr 8);
   PushStack(PC and $FF);

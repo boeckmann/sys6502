@@ -154,15 +154,23 @@ begin
   DoMemdump(page shl 8, $100);
 end;
 
-procedure DoRun;
+function DoRun : boolean;
 begin
-  cpu.ExecuteTo($FFFC);
+  DoRun := cpu.ExecuteTo($FFFC, true);
+  if not DoRun then begin
+    cpu.OpRTI;
+    WriteLn(format('** breakpoint hit at %4.4X **', [cpu.BrkAddr]));
+    cpu.DumpRegs;
+  end;
 end;
 
 procedure DoStep;
 begin
   if cpu.PC <> PC_HALT then begin
-    cpu.ExecuteNext;
+    if not cpu.ExecuteNext then begin
+      cpu.OpRTI;
+      WriteLn(format('** breakpoint hit at %4.4X **', [cpu.BrkAddr]));
+    end;
   end;
   cpu.DumpRegs;
 end;
@@ -258,12 +266,13 @@ end;
 procedure InitSystem;
 begin
   FillChar(mem, Length(mem), 0);    // init memory
+  mem[$FFF0] := $40;                // RTI
   mem[$FFFC] := $00;                // set 6502 reset vector to $0200
   mem[$FFFD] := $02;
-  mem[$FFFE] := $FC;                // set interrupt vector to terminate addr
+  mem[$FFFE] := $FE;                // set interrupt vector to $FFFE
   mem[$FFFF] := $FF;
 
-  mem[$01FE] := $FC;                // init end of  stk end with terminate addr
+  mem[$01FE] := $FB;                // init end of  stk end with terminate addr
   mem[$01FF] := $FF;
 
   cpu.Init(@LoadMem, @StoreMem);
@@ -273,18 +282,24 @@ end;
 
 begin
   InitSystem;
+  terminating := false;
 
-  if ParamCount = 0 then begin
-    verbose := true;
-    terminating := false;
-    while not terminating do begin
-      command := ReadCommand;
-      InterpretCommand(command);
-    end;
-  end
-  else begin
+  if ParamCount > 0 then begin
     DoLoad(ParamStr(1), $200);
-    DoRun;
-  end
+  end;
+
+  if (ParamCount > 1) and (ParamStr(2) = 'r') then begin
+    if DoRun then terminating := true;
+  end;
+
+  verbose := true;
+  while not terminating do begin
+    command := ReadCommand;
+    InterpretCommand(command);
+    if cpu.PC = $FFFC then begin
+      WriteLn('** program terminated **');
+      cpu.ResetCPU;
+    end;
+  end;
 end.
 
