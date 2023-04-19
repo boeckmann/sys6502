@@ -266,13 +266,12 @@ end;
 procedure InitSystem;
 begin
   FillChar(mem, Length(mem), 0);    // init memory
-  mem[$FFF0] := $40;                // RTI
   mem[$FFFC] := $00;                // set 6502 reset vector to $0200
   mem[$FFFD] := $02;
   mem[$FFFE] := $FE;                // set interrupt vector to $FFFE
   mem[$FFFF] := $FF;
 
-  mem[$01FE] := $FB;                // init end of  stk end with terminate addr
+  mem[$01FE] := $FB;                // init end of stk with terminate addr
   mem[$01FF] := $FF;
 
   cpu.Init(@LoadMem, @StoreMem);
